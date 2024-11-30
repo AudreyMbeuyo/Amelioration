@@ -1,0 +1,42 @@
+{
+  "annotations": {},
+  "applications": "*",
+  "fields": [
+    {
+      "fieldName": "matricule",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "nom",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "prenom",
+      "fieldType": "String"
+    }
+  ],
+  "name": "Etudiant",
+  "relationships": [
+    {
+      "otherEntityName": "matiere",
+      "otherEntityRelationshipName": "etudiant",
+      "relationshipName": "matiere",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-many"
+    },
+    {
+      "otherEntityName": "estpresent",
+      "otherEntityRelationshipName": "etudiant",
+      "relationshipName": "estpresent",
+      "relationshipSide": "right",
+      "relationshipType": "one-to-many"
+    },
+    {
+      "otherEntityName": "classe",
+      "otherEntityRelationshipName": "etudiant",
+      "relationshipName": "classe",
+      "relationshipSide": "right",
+      "relationshipType": "many-to-many"
+    }
+  ]
+}

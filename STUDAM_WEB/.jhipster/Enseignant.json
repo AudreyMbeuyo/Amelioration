@@ -1,0 +1,35 @@
+{
+  "annotations": {},
+  "applications": "*",
+  "fields": [
+    {
+      "fieldName": "nom",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "email",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "password",
+      "fieldType": "String"
+    }
+  ],
+  "name": "Enseignant",
+  "relationships": [
+    {
+      "otherEntityName": "departement",
+      "otherEntityRelationshipName": "enseignant",
+      "relationshipName": "departement",
+      "relationshipSide": "left",
+      "relationshipType": "one-to-one"
+    },
+    {
+      "otherEntityName": "matiere",
+      "otherEntityRelationshipName": "enseignant",
+      "relationshipName": "matiere",
+      "relationshipSide": "right",
+      "relationshipType": "one-to-many"
+    }
+  ]
+}

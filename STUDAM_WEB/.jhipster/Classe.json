@@ -1,0 +1,34 @@
+{
+  "annotations": {},
+  "applications": "*",
+  "fields": [
+    {
+      "fieldName": "nom",
+      "fieldType": "String"
+    }
+  ],
+  "name": "Classe",
+  "relationships": [
+    {
+      "otherEntityName": "etudiant",
+      "otherEntityRelationshipName": "classe",
+      "relationshipName": "etudiant",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-many"
+    },
+    {
+      "otherEntityName": "departement",
+      "otherEntityRelationshipName": "classe",
+      "relationshipName": "departement",
+      "relationshipSide": "right",
+      "relationshipType": "many-to-one"
+    },
+    {
+      "otherEntityName": "matiere",
+      "otherEntityRelationshipName": "classe",
+      "relationshipName": "matiere",
+      "relationshipSide": "right",
+      "relationshipType": "many-to-many"
+    }
+  ]
+}
