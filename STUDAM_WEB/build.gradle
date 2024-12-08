@@ -5,7 +5,6 @@ plugins {
     id "eclipse"
     id "com.gorylenko.gradle-git-properties"
     alias(libs.plugins.spring.boot)
-    id "jhipster.docker-conventions"
     id "jhipster.code-quality-conventions"
     id "org.liquibase.gradle"
     id "jhipster.node-gradle-conventions"
@@ -170,7 +169,6 @@ dependencies {
     testImplementation "org.testcontainers:mysql"
     testImplementation "org.testcontainers:testcontainers"
     annotationProcessor "org.glassfish.jaxb:jaxb-runtime"
-    developmentOnly "org.springframework.boot:spring-boot-docker-compose"
     // jhipster-needle-gradle-dependency - JHipster will add additional dependencies here
     OperatingSystem os = org.gradle.nativeplatform.platform.internal.DefaultNativePlatform.getCurrentOperatingSystem();
     Architecture arch = org.gradle.nativeplatform.platform.internal.DefaultNativePlatform.getCurrentArchitecture();
