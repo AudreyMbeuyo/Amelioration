@@ -19,7 +19,7 @@ export const initialState = {
   redirectMessage: null as unknown as string,
   sessionHasBeenFetched: false,
   logoutUrl: null as unknown as string,
-};
+}; 
 
 export type AuthenticationState = Readonly<typeof initialState>;
 
@@ -40,7 +40,7 @@ export const getAccount = createAsyncThunk('authentication/get_account', async (
 });
 
 interface IAuthParams {
-  username: string;
+  email: string;
   password: string;
   rememberMe?: boolean;
 }
@@ -53,10 +53,10 @@ export const authenticate = createAsyncThunk(
   },
 );
 
-export const login: (username: string, password: string, rememberMe?: boolean) => AppThunk =
-  (username, password, rememberMe = false) =>
+export const login: (email: string, password: string, rememberMe?: boolean) => AppThunk =
+  (email, password, rememberMe = false) =>
   async dispatch => {
-    const result = await dispatch(authenticate({ username, password, rememberMe }));
+    const result = await dispatch(authenticate({ email, password, rememberMe }));
     const response = result.payload as AxiosResponse;
     const bearerToken = response?.headers?.authorization;
     if (bearerToken && bearerToken.slice(0, 7) === 'Bearer ') {

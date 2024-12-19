@@ -21,8 +21,8 @@ export const RegisterPage = () => {
 
   const currentLocale = useAppSelector(state => state.locale.currentLocale);
 
-  const handleValidSubmit = ({ username, email, firstPassword }) => {
-    dispatch(handleRegister({ login: username, email, password: firstPassword, langKey: currentLocale }));
+  const handleValidSubmit = ({ username, firstname, email, firstPassword }) => {
+    dispatch(handleRegister({ login: username, firstname, email, password: firstPassword, langKey: currentLocale }));
   };
 
   const updatePassword = event => setPassword(event.target.value);
@@ -62,6 +62,8 @@ export const RegisterPage = () => {
               }}
               data-cy="username"
             />
+            <ValidatedField name="firstname" label="Noms et Prénoms" placeholder="Noms et Prénoms" validate={{}} data-cy="email" />
+
             <ValidatedField
               name="email"
               label={translate('global.form.email.label')}

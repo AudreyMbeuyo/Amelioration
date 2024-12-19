@@ -7,13 +7,13 @@ import { type FieldError, useForm } from 'react-hook-form';
 export interface ILoginModalProps {
   showModal: boolean;
   loginError: boolean;
-  handleLogin: (username: string, password: string, rememberMe: boolean) => void;
+  handleLogin: (email: string, password: string, rememberMe: boolean) => void;
   handleClose: () => void;
 }
 
 const LoginModal = (props: ILoginModalProps) => {
-  const login = ({ username, password, rememberMe }) => {
-    props.handleLogin(username, password, rememberMe);
+  const login = ({ email, password, rememberMe }) => {
+    props.handleLogin(email, password, rememberMe);
   };
 
   const {
@@ -47,16 +47,16 @@ const LoginModal = (props: ILoginModalProps) => {
             </Col>
             <Col md="12">
               <ValidatedField
-                name="username"
-                label={translate('global.form.username.label')}
-                placeholder={translate('global.form.username.placeholder')}
+                name="email"
+                label={translate('global.form.email.label')}
+                placeholder={translate('global.form.email.placeholder')}
                 required
                 autoFocus
-                data-cy="username"
-                validate={{ required: 'Username cannot be empty!' }}
+                data-cy="email"
+                validate={{ required: 'email cannot be empty!' }}
                 register={register}
-                error={errors.username as FieldError}
-                isTouched={touchedFields.username}
+                error={errors.email as FieldError}
+                isTouched={touchedFields.email}
               />
               <ValidatedField
                 name="password"
