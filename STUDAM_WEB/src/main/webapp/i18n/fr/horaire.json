@@ -1,0 +1,28 @@
+{
+  "studamWebApp": {
+    "horaire": {
+      "home": {
+        "title": "Horaires",
+        "refreshListLabel": "Actualiser la liste",
+        "createLabel": "Créer un nouveau Horaire",
+        "createOrEditLabel": "Créer ou éditer un Horaire",
+        "notFound": "Aucun Horaire trouvé"
+      },
+      "created": "Un nouveau Horaire a été créé avec l'identifiant {{ param }}",
+      "updated": "Le Horaire avec l'identifiant {{ param }} a été mis à jour",
+      "deleted": "Le Horaire avec l'identifiant {{ param }} a été supprimé",
+      "delete": {
+        "question": "Êtes-vous certain de vouloir supprimer le Horaire {{ id }} ?"
+      },
+      "detail": {
+        "title": "Horaire"
+      },
+      "id": "ID",
+      "jour": "Jour",
+      "heureDebut": "Heure Debut",
+      "heureFin": "Heure Fin",
+      "estpresent": "Estpresent",
+      "matiere": "Matiere"
+    }
+  }
+}

@@ -1,0 +1,45 @@
+
+pluginManagement {
+    repositories {
+        // jhipster-needle-gradle-plugin-management-repositories - JHipster will add additional entries here
+    }
+    buildscript {
+        repositories {
+            mavenCentral()
+        }
+        dependencies {
+            classpath group: 'org.liquibase', name: 'liquibase-core', version: "${liquibaseCoreVersion}"
+        }
+    }
+    plugins {
+        id 'com.gorylenko.gradle-git-properties' version "${gitPropertiesPluginVersion}"
+        id "com.gradle.enterprise" version "${gradleEnterprisePluginVersion}"
+        id "com.gradle.common-custom-user-data-gradle-plugin" version "${gradleCommonCustomUserDataPluginVersion}"
+        id "org.liquibase.gradle" version "${liquibasePluginVersion}"
+        // jhipster-needle-gradle-plugin-management-plugins - JHipster will add additional entries here
+    }
+}
+
+plugins {
+    id 'com.gradle.enterprise'
+    id 'com.gradle.common-custom-user-data-gradle-plugin'
+}
+
+gradleEnterprise {
+    server = "no"
+    buildScan {
+        captureTaskInputFiles = true
+        uploadInBackground = System.getenv("CI") == null // adjust to your CI provider
+        publishAlways()
+    }
+}
+
+buildCache {
+    local { enabled = true }
+    remote(HttpBuildCache) {
+        push = true
+        enabled = false // Disabled as this might not always desired
+        url = 'no/cache/' // note the trailing slash!
+    }
+}
+rootProject.name = "studam-web"
