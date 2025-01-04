@@ -20,31 +20,42 @@ class DatabaseSeeder extends Seeder
         $departementGc = Departement::create(['nom' => 'Génie Civil']);
 
         // Création des enseignants
-        $enseignant1 = Enseignant::create([
+        // Chef du département informatique
+        $chefInfo = Enseignant::create([
             'nom' => 'John Doe',
-            'email' => 'john@example.com',
+            'email' => 'chef.info@example.com',
             'password' => Hash::make('password123'),
-            'departement_id' => $departementInfo->id
+            'departement_id' => $departementInfo->id  // Chef du département informatique
         ]); 
 
-        $enseignant2 = Enseignant::create([
+        // Chef du département génie civil
+        $chefGc = Enseignant::create([
             'nom' => 'Jane Smith',
-            'email' => 'jane@example.com',
+            'email' => 'chef.gc@example.com',
             'password' => Hash::make('password123'),
-            'departement_id' => $departementGc->id
+            'departement_id' => $departementGc->id  // Chef du département génie civil
         ]);
 
-        // Création des horaires
-        $horaire1 = Horaire::create([
-            'jour' => 'LUNDI',
-            'heure_debut' => '08:00',
-            'heure_fin' => '10:00'
+        // Enseignants simples (sans département)
+        $enseignant1 = Enseignant::create([
+            'nom' => 'Alice Johnson',
+            'email' => 'alice@example.com',
+            'password' => Hash::make('password123'),
+            'departement_id' => null  // Enseignant simple
         ]);
 
-        $horaire2 = Horaire::create([
-            'jour' => 'MARDI',
-            'heure_debut' => '10:00',
-            'heure_fin' => '12:00'
+        $enseignant2 = Enseignant::create([
+            'nom' => 'Bob Wilson',
+            'email' => 'bob@example.com',
+            'password' => Hash::make('password123'),
+            'departement_id' => null  // Enseignant simple
+        ]);
+
+        $enseignant3 = Enseignant::create([
+            'nom' => 'Carol White',
+            'email' => 'carol@example.com',
+            'password' => Hash::make('password123'),
+            'departement_id' => null  // Enseignant simple
         ]);
 
         // Création des classes
@@ -62,15 +73,30 @@ class DatabaseSeeder extends Seeder
         $matiere1 = Matiere::create([
             'libelle' => 'Programmation Web',
             'code' => 'INFO301',
-            'horaire_id' => $horaire1->id,
             'enseignant_id' => $enseignant1->id
         ]);
 
         $matiere2 = Matiere::create([
             'libelle' => 'Base de données',
             'code' => 'INFO302',
-            'horaire_id' => $horaire2->id,
             'enseignant_id' => $enseignant1->id
+        ]);
+
+        // Création des horaires
+        $horaire1 = Horaire::create([
+            'jour' => 'LUNDI',
+            'heure_debut' => '08:00',
+            'heure_fin' => '10:00',
+            'classe_id' => $classe1->id,
+            'matiere_id' => $matiere1->id
+        ]);
+
+        $horaire2 = Horaire::create([
+            'jour' => 'MARDI',
+            'heure_debut' => '10:00',
+            'heure_fin' => '12:00',
+            'classe_id' => $classe1->id,
+            'matiere_id' => $matiere2->id
         ]);
 
         // Association des matières aux classes
