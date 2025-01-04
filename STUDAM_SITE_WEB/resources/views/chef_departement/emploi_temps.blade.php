@@ -189,7 +189,7 @@
                 </div>
 
                 <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-                    <button type="button" onclick="submitForm()"
+                    <button type="submit" form="matiereForm"
                             class="inline-flex w-full justify-center rounded-md bg-orange px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-dark sm:ml-3 sm:w-auto">
                         Enregistrer
                     </button>
@@ -213,6 +213,68 @@
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             }
+        });
+
+        // Gestionnaire de soumission du formulaire
+        $('#matiereForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            // Log des données envoyées
+            for (let pair of formData.entries()) {
+                console.log(pair[0] + ': ' + pair[1]);
+            }
+            
+            // Réinitialiser les messages d'erreur
+            $('.error-message').remove();
+            $('.border-red-500').removeClass('border-red-500');
+            
+            $.ajax({
+                url: '{{ route('chef_departement.store_matiere_enseignant') }}',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    console.log('Succès:', response);
+                    if (response.success) {
+                        location.reload();
+                    }
+                },
+                error: function(xhr) {
+                    console.log('Erreur complète:', xhr);
+                    console.log('Status:', xhr.status);
+                    console.log('Response:', xhr.responseJSON);
+                    
+                    if (xhr.status === 422) {
+                        const errors = xhr.responseJSON.errors;
+                        console.log('Erreurs de validation:', errors);
+                        
+                        Object.keys(errors).forEach(function(field) {
+                            const errorMessage = errors[field][0];
+                            console.log('Champ:', field, 'Message:', errorMessage);
+                            
+                            if (field.includes('.')) {
+                                // Pour les champs imbriqués comme nouveau_enseignant.nom
+                                const parts = field.split('.');
+                                const input = $(`[name="${parts[0]}[${parts[1]}]"]`);
+                                input.addClass('border-red-500');
+                                input.after(`<p class="text-red-500 text-xs mt-1 error-message">${errorMessage}</p>`);
+                            } else {
+                                // Pour les champs simples
+                                const input = $(`[name="${field}"]`);
+                                input.addClass('border-red-500');
+                                input.after(`<p class="text-red-500 text-xs mt-1 error-message">${errorMessage}</p>`);
+                            }
+                        });
+                    } else {
+                        alert('Une erreur est survenue lors de la communication avec le serveur.');
+                    }
+                }
+            });
+            
+            return false;
         });
 
         // Gestionnaire de clic pour ouvrir le modal
@@ -279,27 +341,6 @@
         $('#nouveau_enseignant').addClass('hidden');
         $('#enseignants_list').addClass('hidden');
         $('#enseignant_search').val('');
-    }
-
-    function submitForm() {
-        const formData = new FormData($('#matiereForm')[0]);
-        
-        $.ajax({
-            url: '{{ route('chef_departement.store_matiere_enseignant') }}',
-            method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                if (response.success) {
-                    location.reload();
-                }
-            },
-            error: function(xhr) {
-                console.error('Error:', xhr);
-                alert('Une erreur est survenue. Veuillez vérifier les informations saisies.');
-            }
-        });
     }
 </script>
 @endpush
