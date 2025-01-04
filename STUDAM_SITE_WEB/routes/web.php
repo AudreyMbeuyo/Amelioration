@@ -19,6 +19,8 @@ Route::middleware(['auth', \App\Http\Middleware\ChefDepartementMiddleware::class
     Route::get('/chef-departement', [ChefDepartementController::class, 'index'])->name('chef_departement.index');
     Route::get('/chef-departement/emploi-temps/{classe}', [ChefDepartementController::class, 'editEmploiTemps'])->name('chef_departement.emploi_temps');
     Route::put('/chef-departement/emploi-temps/{classe}', [ChefDepartementController::class, 'updateEmploiTemps'])->name('chef_departement.update_emploi_temps');
+    Route::get('/chef-departement/enseignants', [ChefDepartementController::class, 'getEnseignants'])->name('chef_departement.get_enseignants');
+    Route::post('/chef-departement/matiere-enseignant', [ChefDepartementController::class, 'storeMatiereEnseignant'])->name('chef_departement.store_matiere_enseignant');
 });
 
 // Routes protégées

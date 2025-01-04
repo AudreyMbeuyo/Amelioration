@@ -1,71 +1,305 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <h2>Emploi du temps - {{ $classe->nom }}</h2>
+<div class="py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-navy">Emploi du Temps</h1>
+            <nav class="flex" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <a href="{{ route('dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-orange">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                            </svg>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <a href="{{ route('chef_departement.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-orange md:ml-2">Emplois du temps</a>
+                        </div>
+                    </li>
+                    <li aria-current="page">
+                        <div class="flex items-center">
+                            <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2">{{ $classe->nom }}</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+
+        <div class="mt-4">
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg leading-6 font-medium text-navy">
+                            Emploi du Temps - {{ $classe->nom }}
+                        </h2>
+                        <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                            Gérez les horaires des cours pour cette classe
+                        </p>
+                    </div>
                 </div>
 
-                <div class="card-body">
-                    <form action="{{ route('chef_departement.update_emploi_temps', $classe->id) }}" method="POST">
-                        @csrf
-                        @method('PUT')
-                        
-                        <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>Heures</th>
-                                        <th>Lundi</th>
-                                        <th>Mardi</th>
-                                        <th>Mercredi</th>
-                                        <th>Jeudi</th>
-                                        <th>Vendredi</th>
-                                        <th>Samedi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @php
-                                        $heures = ['08:00-10:00', '10:00-12:00', '14:00-16:00', '16:00-18:00'];
-                                        $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-                                    @endphp
-
-                                    @foreach($heures as $heure)
-                                        <tr>
-                                            <td>{{ $heure }}</td>
-                                            @foreach($jours as $jour)
-                                                <td>
-                                                    <select name="horaires[{{ $jour }}][{{ $heure }}]" class="form-control">
-                                                        <option value="">Sélectionner une matière</option>
-                                                        @foreach($classe->matieres as $matiere)
-                                                            <option value="{{ $matiere->id }}"
-                                                                {{ $horaires->where('jour', $jour)
-                                                                          ->where('heure_debut', $heure)
-                                                                          ->where('matiere_id', $matiere->id)
-                                                                          ->count() > 0 ? 'selected' : '' }}>
-                                                                {{ $matiere->nom }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </td>
-                                            @endforeach
-                                        </tr>
+                <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Horaire
+                                    </th>
+                                    @foreach(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'] as $jour)
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            {{ $jour }}
+                                        </th>
                                     @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @php
+                                    $heures = ['08:00', '10:00', '12:00', '14:00', '16:00'];
+                                @endphp
 
-                        <div class="text-center mt-4">
-                            <button type="submit" class="btn btn-primary">Enregistrer l'emploi du temps</button>
-                            <a href="{{ route('chef_departement.index') }}" class="btn btn-secondary ml-2">Retour</a>
-                        </div>
-                    </form>
+                                @foreach($heures as $heure)
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            {{ $heure }}
+                                        </td>
+                                        @foreach(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'] as $jour)
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                @php
+                                                    $horaire = $horaires->where('jour', $jour)
+                                                                    ->where('heure_debut', $heure)
+                                                                    ->first();
+                                                @endphp
+                                                <div class="min-h-[40px] border border-dashed border-gray-300 rounded-md p-2 cursor-pointer hover:bg-gray-50 cell-click"
+                                                     data-jour="{{ $jour }}"
+                                                     data-heure="{{ $heure }}">
+                                                    @if($horaire && $horaire->matiere)
+                                                        <div class="flex flex-col">
+                                                            <span class="font-medium text-navy">{{ $horaire->matiere->libelle }}</span>
+                                                            <span class="text-xs text-gray-500">{{ $horaire->matiere->code }}</span>
+                                                            <span class="text-xs text-gray-600">{{ $horaire->matiere->enseignant->nom }}</span>
+                                                        </div>
+                                                    @else
+                                                        <div class="text-center text-gray-400">
+                                                            <span>Cliquez pour ajouter</span>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                        @endforeach
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Modal pour ajouter/modifier une matière -->
+<div id="matiereModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 z-10 overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                <div class="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
+                    <button type="button" class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none" onclick="closeModal()">
+                        <span class="sr-only">Fermer</span>
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                        <h3 class="text-lg font-semibold leading-6 text-gray-900" id="modal-title">
+                            Ajouter une matière
+                        </h3>
+
+                        <form id="matiereForm" class="mt-4 space-y-4">
+                            <input type="hidden" id="jour" name="jour">
+                            <input type="hidden" id="heure" name="heure">
+                            <input type="hidden" name="classe_id" value="{{ $classe->id }}">
+
+                            <div>
+                                <label for="nom_matiere" class="block text-sm font-medium text-gray-700">Nom de la matière</label>
+                                <input type="text" name="nom_matiere" id="nom_matiere" required
+                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm">
+                            </div>
+
+                            <div>
+                                <label for="code_matiere" class="block text-sm font-medium text-gray-700">Code de la matière</label>
+                                <input type="text" name="code_matiere" id="code_matiere" required
+                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm">
+                            </div>
+
+                            <div>
+                                <label for="enseignant_search" class="block text-sm font-medium text-gray-700">Rechercher un enseignant</label>
+                                <input type="text" id="enseignant_search"
+                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
+                                       placeholder="Commencez à taper le nom...">
+                                <div id="enseignants_list" class="mt-1 hidden">
+                                    <ul class="max-h-32 overflow-auto rounded-md border border-gray-300 bg-white"></ul>
+                                </div>
+                            </div>
+
+                            <div id="existing_enseignant" class="hidden">
+                                <input type="hidden" name="enseignant_id" id="enseignant_id">
+                                <div class="mt-2 p-2 bg-gray-50 rounded-md">
+                                    <span class="text-sm font-medium text-gray-900" id="selected_enseignant_name"></span>
+                                    <button type="button" onclick="clearEnseignant()" class="ml-2 text-sm text-red-600 hover:text-red-500">
+                                        Changer
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="nouveau_enseignant" class="space-y-4">
+                                <div>
+                                    <label for="nouveau_enseignant_nom" class="block text-sm font-medium text-gray-700">Nom de l'enseignant</label>
+                                    <input type="text" name="nouveau_enseignant[nom]" id="nouveau_enseignant_nom"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm">
+                                </div>
+
+                                <div>
+                                    <label for="nouveau_enseignant_email" class="block text-sm font-medium text-gray-700">Email de l'enseignant</label>
+                                    <input type="email" name="nouveau_enseignant[email]" id="nouveau_enseignant_email"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm">
+                                </div>
+
+                                <div>
+                                    <label for="nouveau_enseignant_password" class="block text-sm font-medium text-gray-700">Mot de passe</label>
+                                    <input type="password" name="nouveau_enseignant[password]" id="nouveau_enseignant_password"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm">
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                    <button type="button" onclick="submitForm()"
+                            class="inline-flex w-full justify-center rounded-md bg-orange px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-dark sm:ml-3 sm:w-auto">
+                        Enregistrer
+                    </button>
+                    <button type="button" onclick="closeModal()"
+                            class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                        Annuler
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
+
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        // Configuration globale pour les requêtes AJAX
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+
+        // Gestionnaire de clic pour ouvrir le modal
+        $('.cell-click').on('click', function() {
+            const jour = $(this).data('jour');
+            const heure = $(this).data('heure');
+            openModal(jour, heure);
+        });
+    });
+
+    function openModal(jour, heure) {
+        $('#jour').val(jour);
+        $('#heure').val(heure);
+        $('#matiereModal').removeClass('hidden');
+    }
+
+    function closeModal() {
+        $('#matiereModal').addClass('hidden');
+        $('#matiereForm')[0].reset();
+        $('#existing_enseignant').addClass('hidden');
+        $('#nouveau_enseignant').removeClass('hidden');
+        $('#enseignants_list').addClass('hidden');
+    }
+
+    function clearEnseignant() {
+        $('#existing_enseignant').addClass('hidden');
+        $('#nouveau_enseignant').removeClass('hidden');
+        $('#enseignant_id').val('');
+    }
+
+    let searchTimeout;
+    $('#enseignant_search').on('input', function() {
+        clearTimeout(searchTimeout);
+        const search = $(this).val();
+        
+        if (search.length < 2) {
+            $('#enseignants_list').addClass('hidden');
+            return;
+        }
+
+        searchTimeout = setTimeout(() => {
+            $.get('{{ route('chef_departement.get_enseignants') }}', { search: search })
+                .done(function(data) {
+                    const list = $('#enseignants_list');
+                    list.removeClass('hidden');
+                    const ul = list.find('ul');
+                    ul.empty();
+                    
+                    data.forEach(enseignant => {
+                        const li = $('<li>')
+                            .addClass('px-4 py-2 hover:bg-gray-100 cursor-pointer')
+                            .text(enseignant.nom)
+                            .on('click', () => selectEnseignant(enseignant));
+                        ul.append(li);
+                    });
+                });
+        }, 300);
+    });
+
+    function selectEnseignant(enseignant) {
+        $('#enseignant_id').val(enseignant.id);
+        $('#selected_enseignant_name').text(enseignant.nom);
+        $('#existing_enseignant').removeClass('hidden');
+        $('#nouveau_enseignant').addClass('hidden');
+        $('#enseignants_list').addClass('hidden');
+        $('#enseignant_search').val('');
+    }
+
+    function submitForm() {
+        const formData = new FormData($('#matiereForm')[0]);
+        
+        $.ajax({
+            url: '{{ route('chef_departement.store_matiere_enseignant') }}',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    location.reload();
+                }
+            },
+            error: function(xhr) {
+                console.error('Error:', xhr);
+                alert('Une erreur est survenue. Veuillez vérifier les informations saisies.');
+            }
+        });
+    }
+</script>
+@endpush
