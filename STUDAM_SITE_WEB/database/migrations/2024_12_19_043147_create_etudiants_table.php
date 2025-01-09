@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('matricule')->unique();
             $table->string('nom');
             $table->string('prenom');
+            $table->foreignId('classe_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
     }

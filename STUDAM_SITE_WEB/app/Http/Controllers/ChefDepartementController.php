@@ -18,8 +18,11 @@ class ChefDepartementController extends Controller
     {
         $departement = auth()->user()->departement;
         $classes = Classe::where('departement_id', $departement->id)->get();
-        
-        return view('chef_departement.index', compact('departement', 'classes'));
+        $enseignants = Enseignant::all();
+        $matieres = Matiere::whereHas('classes', function($query) use ($departement) {
+            $query->where('departement_id', $departement->id);
+        })->get();        
+        return view('chef_departement.index', compact('departement', 'classes', 'matieres', 'enseignants'));
     }
 
     public function editEmploiTemps($classe_id)

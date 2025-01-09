@@ -83,11 +83,11 @@
                             <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                             </svg>
-                            Gérer les Emplois du Temps
+                            Gérer votre département
                         </a>
                     </div>
                     <div class="px-4 py-3 bg-gray-50 text-sm text-gray-500">
-                        En tant que chef de département, vous pouvez gérer les emplois du temps de toutes les classes de votre département.
+                        En tant que chef de département,vous pouvez gérer les matières, les classes et les emplois du temps de toutes les classes de votre département.
                     </div>
                 </div>
             </div>
