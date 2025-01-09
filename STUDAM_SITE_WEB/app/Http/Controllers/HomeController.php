@@ -39,7 +39,8 @@ class HomeController extends Controller
         $classes = Classe::whereHas('matieres', function($query) use ($enseignant) {
             $query->where('enseignant_id', $enseignant->id);
         })->get();
-        
+
         return view('dashboard', compact('enseignant', 'matieres', 'classes'));
+
     }
 }
