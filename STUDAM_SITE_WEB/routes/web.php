@@ -23,6 +23,7 @@ Route::middleware(['auth', \App\Http\Middleware\ChefDepartementMiddleware::class
     Route::get('/chef-departement/enseignants', [ChefDepartementController::class, 'getEnseignants'])->name('chef_departement.get_enseignants');
     Route::post('/chef-departement/matiere-enseignant', [ChefDepartementController::class, 'storeMatiereEnseignant'])->name('chef_departement.store_matiere_enseignant');
     Route::post('/chef-departement/matieres', [MatiereController::class, 'store'])->name('matieres.store');
+    Route::post('/chef-departement/enseignants', [MatiereController::class, 'store'])->name('enseignants.store');
 });
 
 // Routes protégées
