@@ -5,6 +5,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\ChefDepartementController;
 use App\Http\Controllers\MatiereController;
+use App\Http\Controllers\HoraireController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -14,6 +15,9 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/register', [AuthController::class, 'showRegistrationForm'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Route pour la gestion des horaires
+Route::post('/horaire', [HoraireController::class, 'store'])->name('horaire.store');
 
 // Routes pour le chef de département (protégées)
 Route::middleware(['auth', \App\Http\Middleware\ChefDepartementMiddleware::class])->group(function () {
