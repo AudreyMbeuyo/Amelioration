@@ -1,5 +1,4 @@
 <?php
-
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
@@ -9,6 +8,7 @@ use App\Models\Classe;
 use App\Models\Matiere;
 use App\Models\Etudiant;
 use App\Models\Horaire;
+use App\Models\HoraireClasseMatiere;
 use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
@@ -87,33 +87,38 @@ class DatabaseSeeder extends Seeder
             'jour' => 'LUNDI',
             'heure_debut' => '08:00',
             'heure_fin' => '10:00',
-            'classe_id' => $classe1->id,
-            'matiere_id' => $matiere1->id
         ]);
 
         $horaire2 = Horaire::create([
             'jour' => 'MARDI',
             'heure_debut' => '10:00',
             'heure_fin' => '12:00',
-            'classe_id' => $classe1->id,
-            'matiere_id' => $matiere2->id
         ]);
 
-        // Association des matières aux classes
-        $matiere1->classes()->attach($classe1);
-        $matiere2->classes()->attach($classe1);
+        // Création des associations entre les horaires et les classes et les matières
+        HoraireClasseMatiere::create([
+            'horaire_id' => $horaire1->id,
+            'classe_id' => $classe1->id,
+            'matiere_id' => $matiere1->id,
+        ]);
+
+        HoraireClasseMatiere::create([
+            'horaire_id' => $horaire2->id,
+            'classe_id' => $classe1->id,
+            'matiere_id' => $matiere2->id,
+        ]);
 
         // Création des étudiants
         $etudiant1 = Etudiant::create([
             'matricule' => 'ETU001',
             'nom' => 'Alice Johnson',
-            'prenom' => 'Alice'
+            'prenom' => 'Alice',
         ]);
 
         $etudiant2 = Etudiant::create([
             'matricule' => 'ETU002',
             'nom' => 'Bob Wilson',
-            'prenom' => 'Bob'
+            'prenom' => 'Bob',
         ]);
 
         // Association des étudiants aux classes

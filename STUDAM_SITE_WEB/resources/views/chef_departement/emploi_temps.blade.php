@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+
 <div class="py-6">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center">
@@ -42,6 +43,13 @@
                         <h2 class="text-lg leading-6 font-medium text-navy">
                             Emploi du Temps - {{ $classe->nom }}
                         </h2>
+
+                        <div class="px-4 py-5 sm:px-6 flex justify-end">
+                        <button id="add-horaire-btn" class="bg-orange text-white px-4 py-2 rounded-md shadow hover:bg-orange-dark">
+                        Ajouter une horaire
+                        </button>
+                        </div>
+
                         <p class="mt-1 max-w-2xl text-sm text-gray-500">
                             Gérez les horaires des cours pour cette classe
                         </p>
@@ -56,7 +64,7 @@
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Horaire
                                     </th>
-                                    @foreach(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'] as $jour)
+                                    @foreach(['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI'] as $jour)
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             {{ $jour }}
                                         </th>
@@ -64,30 +72,41 @@
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                @php
-                                    $heures = ['08:00', '10:00', '12:00', '14:00', '16:00'];
-                                @endphp
+                            @php
+                                use App\Models\Horaire;
+                                $heures = Horaire::distinct()->select('heure_debut', 'heure_fin')->get()->map(function ($horaire) {
+                                    return $horaire->heure_debut . ' - ' . $horaire->heure_fin;
+                                })->toArray();
+                                use App\Models\HoraireClasseMatiere;
+                                $horaireClasseMatiere = HoraireClasseMatiere::where('classe_id', $classe->id)->first();
+                            @endphp
 
                                 @foreach($heures as $heure)
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                             {{ $heure }}
                                         </td>
-                                        @foreach(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'] as $jour)
+                                        @foreach(['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI'] as $jour)
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 @php
                                                     $horaire = $horaires->where('jour', $jour)
                                                                     ->where('heure_debut', $heure)
                                                                     ->first();
+                                                    
+        
+        
+                                                    
                                                 @endphp
                                                 <div class="min-h-[40px] border border-dashed border-gray-300 rounded-md p-2 cursor-pointer hover:bg-gray-50 cell-click"
                                                      data-jour="{{ $jour }}"
                                                      data-heure="{{ $heure }}">
-                                                    @if($horaire && $horaire->matiere)
+                                                     
+                                                     
+                                                     @if($horaireClasseMatiere && $horaireClasseMatiere->horaire && $horaireClasseMatiere->classe && $horaireClasseMatiere->matiere && $horaireClasseMatiere->horaire->jour == $jour)
                                                         <div class="flex flex-col">
-                                                            <span class="font-medium text-navy">{{ $horaire->matiere->libelle }}</span>
-                                                            <span class="text-xs text-gray-500">{{ $horaire->matiere->code }}</span>
-                                                            <span class="text-xs text-gray-600">{{ $horaire->matiere->enseignant->nom }}</span>
+                                                            <span class="font-medium text-navy">{{ $horaireClasseMatiere->matiere->libelle }}</span>
+                                                            <span class="text-xs text-gray-500">{{ $horaireClasseMatiere->matiere->code }}</span>
+                                                            <span class="text-xs text-gray-600">{{ $horaireClasseMatiere->matiere->enseignant->nom }}</span>
                                                         </div>
                                                     @else
                                                         <div class="text-center text-gray-400">
@@ -198,16 +217,70 @@
                         Annuler
                     </button>
                 </div>
+
+            
+
             </div>
         </div>
     </div>
 </div>
 
+<!-- Modal pour ajouter une horaire -->
+<div id="horaireModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 z-10 overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:w-full sm:max-w-lg sm:p-6">
+                <div class="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
+                    <button type="button" class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none" onclick="closeModal()">
+                        <span class="sr-only">Fermer</span>
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                
+                <form id="horaireForm" action="{{ route('horaire.store') }}" method="POST">
+    @csrf
+    <div>
+        <label for="heure_debut">Heure de début</label>
+        <input type="time" id="heure_debut" name="heure_debut" required>
+    </div>
+    <div>
+        <label for="heure_fin">Heure de fin</label>
+        <input type="time" id="heure_fin" name="heure_fin" required>
+    </div>
+    <button type="submit" form="horaireForm" 
+            class="inline-flex w-full justify-center rounded-md bg-orange px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-dark sm:ml-3 sm:w-auto">
+        Ajouter
+    </button>
+</form>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
 <script>
     $(document).ready(function() {
+           // Bouton pour ouvrir le modal
+           $('#add-horaire-btn').on('click', function () {
+            $('#horaireModal').removeClass('hidden');
+        });
+
+        // Soumission du formulaire d'ajout d'horaire
+        $('#horaireForm').on('submit', function (e) {
+            e.preventDefault();
+
+            const data = {
+                heure_debut: $('#heure_debut').val(),
+                heure_fin: $('#heure_fin').val(),
+        };
+    });
+        
         // Configuration globale pour les requêtes AJAX
         $.ajaxSetup({
             headers: {
@@ -230,7 +303,7 @@
             $('.error-message').remove();
             $('.border-red-500').removeClass('border-red-500');
             
-            $.ajax({
+            $.ajax({                   
                 url: '{{ route('chef_departement.store_matiere_enseignant') }}',
                 method: 'POST',
                 data: formData,

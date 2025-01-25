@@ -4,6 +4,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\ChefDepartementController;
+use App\Http\Controllers\HoraireController;
+
+Route::post('/horaire', [HoraireController::class, 'store'])->name('horaire.store');
+
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
