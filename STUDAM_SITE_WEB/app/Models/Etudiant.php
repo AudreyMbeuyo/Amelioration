@@ -16,7 +16,7 @@ class Etudiant extends Model
 
     public function classes()
     {
-        return $this->belongsToMany(Classe::class);
+        return $this->belongsToMany(Classe::class, 'classe_id');
     }
 
     public function matieres()

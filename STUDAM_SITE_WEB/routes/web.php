@@ -4,10 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\ChefDepartementController;
-use App\Http\Controllers\HoraireController;
-
-Route::post('/horaire', [HoraireController::class, 'store'])->name('horaire.store');
-
+use App\Http\Controllers\MatiereController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -25,6 +22,8 @@ Route::middleware(['auth', \App\Http\Middleware\ChefDepartementMiddleware::class
     Route::put('/chef-departement/emploi-temps/{classe}', [ChefDepartementController::class, 'updateEmploiTemps'])->name('chef_departement.update_emploi_temps');
     Route::get('/chef-departement/enseignants', [ChefDepartementController::class, 'getEnseignants'])->name('chef_departement.get_enseignants');
     Route::post('/chef-departement/matiere-enseignant', [ChefDepartementController::class, 'storeMatiereEnseignant'])->name('chef_departement.store_matiere_enseignant');
+    Route::post('/chef-departement/matieres', [MatiereController::class, 'store'])->name('matieres.store');
+    Route::post('/chef-departement/enseignants', [MatiereController::class, 'store'])->name('enseignants.store');
 });
 
 // Routes protégées

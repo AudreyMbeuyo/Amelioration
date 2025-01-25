@@ -37,7 +37,7 @@
                 <div class="flex items-center">
                     @guest
                         <a href="{{ route('login') }}" class="text-navy hover:text-orange px-3 py-2 rounded-md text-sm font-medium">Connexion</a>
-                        <a href="{{ route('register') }}" class="bg-orange text-white hover:bg-opacity-90 px-3 py-2 rounded-md text-sm font-medium ml-4">Inscription</a>
+                        <!-- <a href="{{ route('register') }}" class="bg-orange text-white hover:bg-opacity-90 px-3 py-2 rounded-md text-sm font-medium ml-4">Inscription</a> -->
                     @else
                         <div class="ml-3 relative">
                             <div class="flex items-center">
