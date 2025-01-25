@@ -13,13 +13,19 @@ class HoraireController extends Controller
         $validated = $request->validate([
             'heure_debut' => 'required|date_format:H:i',
             'heure_fin' => 'required|date_format:H:i|after:heure_debut',
-            
         ]);
 
-        // Créer un nouvel horaire
-        Horaire::create($validated);
+        $jours = ['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI'];
+        
+        foreach ($jours as $jour) {
+            // Créer un horaire pour chaque jour
+            Horaire::create([
+                'jour' => $jour,
+                'heure_debut' => $validated['heure_debut'],
+                'heure_fin' => $validated['heure_fin'],
+            ]);
+        }
 
-        // Rediriger avec un message de succès
-        return redirect()->back()->with('success', 'Horaire ajouté avec succès!');
+        return response()->json(['message' => 'Horaires ajoutés avec succès!']);
     }
 }

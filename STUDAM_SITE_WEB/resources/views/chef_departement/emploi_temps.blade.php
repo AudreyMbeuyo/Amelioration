@@ -39,21 +39,15 @@
         <div class="mt-4">
             <div class="bg-white shadow overflow-hidden sm:rounded-lg">
                 <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
-                    <div>
-                        <h2 class="text-lg leading-6 font-medium text-navy">
-                            Emploi du Temps - {{ $classe->nom }}
-                        </h2>
-
-                        <div class="px-4 py-5 sm:px-6 flex justify-end">
-                        <button id="add-horaire-btn" class="bg-orange text-white px-4 py-2 rounded-md shadow hover:bg-orange-dark">
+                    <h2 class="text-lg leading-6 font-medium text-navy">
+                        Emploi du Temps - {{ $classe->nom }}
+                    </h2>
+                    <button id="add-horaire-btn" class="bg-orange hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transform transition-all duration-200 hover:scale-105 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
                         Ajouter une horaire
-                        </button>
-                        </div>
-
-                        <p class="mt-1 max-w-2xl text-sm text-gray-500">
-                            Gérez les horaires des cours pour cette classe
-                        </p>
-                    </div>
+                    </button>
                 </div>
 
                 <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
@@ -74,11 +68,11 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                             @php
                                 use App\Models\Horaire;
+                                use App\Models\HoraireClasseMatiere;
+                                
                                 $heures = Horaire::distinct()->select('heure_debut', 'heure_fin')->get()->map(function ($horaire) {
                                     return $horaire->heure_debut . ' - ' . $horaire->heure_fin;
                                 })->toArray();
-                                use App\Models\HoraireClasseMatiere;
-                                $horaireClasseMatiere = HoraireClasseMatiere::where('classe_id', $classe->id)->first();
                             @endphp
 
                                 @foreach($heures as $heure)
@@ -89,24 +83,27 @@
                                         @foreach(['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI'] as $jour)
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 @php
-                                                    $horaire = $horaires->where('jour', $jour)
-                                                                    ->where('heure_debut', $heure)
+                                                    list($heure_debut, $heure_fin) = explode(' - ', $heure);
+                                                    $horaire = Horaire::where('jour', $jour)
+                                                                    ->where('heure_debut', $heure_debut)
+                                                                    ->where('heure_fin', $heure_fin)
                                                                     ->first();
                                                     
-        
-        
-                                                    
+                                                    $horaireClasseMatiere = $horaire ? HoraireClasseMatiere::where('horaire_id', $horaire->id)
+                                                                                                        ->where('classe_id', $classe->id)
+                                                                                                        ->with(['matiere.enseignant'])
+                                                                                                        ->first() : null;
                                                 @endphp
                                                 <div class="min-h-[40px] border border-dashed border-gray-300 rounded-md p-2 cursor-pointer hover:bg-gray-50 cell-click"
                                                      data-jour="{{ $jour }}"
                                                      data-heure="{{ $heure }}">
-                                                     
-                                                     
-                                                     @if($horaireClasseMatiere && $horaireClasseMatiere->horaire && $horaireClasseMatiere->classe && $horaireClasseMatiere->matiere && $horaireClasseMatiere->horaire->jour == $jour)
+                                                     @if($horaireClasseMatiere && $horaireClasseMatiere->matiere)
                                                         <div class="flex flex-col">
                                                             <span class="font-medium text-navy">{{ $horaireClasseMatiere->matiere->libelle }}</span>
                                                             <span class="text-xs text-gray-500">{{ $horaireClasseMatiere->matiere->code }}</span>
-                                                            <span class="text-xs text-gray-600">{{ $horaireClasseMatiere->matiere->enseignant->nom }}</span>
+                                                            @if($horaireClasseMatiere->matiere->enseignant)
+                                                                <span class="text-xs text-gray-600">{{ $horaireClasseMatiere->matiere->enseignant->nom }}</span>
+                                                            @endif
                                                         </div>
                                                     @else
                                                         <div class="text-center text-gray-400">
@@ -120,6 +117,57 @@
                                 @endforeach
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour ajouter une horaire -->
+<div id="horaireModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 z-10 overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:w-full sm:max-w-lg sm:p-6">
+                <div class="absolute right-0 top-0 pr-4 pt-4">
+                    <button type="button" class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none" onclick="closeHoraireModal()">
+                        <span class="sr-only">Fermer</span>
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                        <h3 class="text-lg font-semibold leading-6 text-gray-900 mb-4">
+                            Ajouter une horaire
+                        </h3>
+                        <form id="horaireForm" action="{{ route('horaire.store') }}" method="POST" class="space-y-4">
+                            @csrf
+                            <div class="grid grid-cols-1 gap-4">
+                                <div>
+                                    <label for="heure_debut" class="block text-sm font-medium text-gray-700">Heure de début</label>
+                                    <input type="time" id="heure_debut" name="heure_debut" required 
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange">
+                                </div>
+                                <div>
+                                    <label for="heure_fin" class="block text-sm font-medium text-gray-700">Heure de fin</label>
+                                    <input type="time" id="heure_fin" name="heure_fin" required 
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange">
+                                </div>
+                            </div>
+                            <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                                <button type="submit"
+                                        class="inline-flex w-full justify-center rounded-md bg-orange px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange sm:ml-3 sm:w-auto">
+                                    Ajouter
+                                </button>
+                                <button type="button" onclick="closeHoraireModal()"
+                                        class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                                    Annuler
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -225,44 +273,6 @@
     </div>
 </div>
 
-<!-- Modal pour ajouter une horaire -->
-<div id="horaireModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="fixed inset-0 z-10 overflow-y-auto">
-        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-            <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:w-full sm:max-w-lg sm:p-6">
-                <div class="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
-                    <button type="button" class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none" onclick="closeModal()">
-                        <span class="sr-only">Fermer</span>
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-
-                
-                <form id="horaireForm" action="{{ route('horaire.store') }}" method="POST">
-    @csrf
-    <div>
-        <label for="heure_debut">Heure de début</label>
-        <input type="time" id="heure_debut" name="heure_debut" required>
-    </div>
-    <div>
-        <label for="heure_fin">Heure de fin</label>
-        <input type="time" id="heure_fin" name="heure_fin" required>
-    </div>
-    <button type="submit" form="horaireForm" 
-            class="inline-flex w-full justify-center rounded-md bg-orange px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-dark sm:ml-3 sm:w-auto">
-        Ajouter
-    </button>
-</form>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-@endsection
-
 @push('scripts')
 <script>
     $(document).ready(function() {
@@ -271,15 +281,39 @@
             $('#horaireModal').removeClass('hidden');
         });
 
+        // Fonction pour fermer le modal
+        window.closeHoraireModal = function() {
+            $('#horaireModal').addClass('hidden');
+        }
+
         // Soumission du formulaire d'ajout d'horaire
         $('#horaireForm').on('submit', function (e) {
             e.preventDefault();
-
-            const data = {
+            
+            const formData = {
                 heure_debut: $('#heure_debut').val(),
                 heure_fin: $('#heure_fin').val(),
-        };
-    });
+                _token: $('meta[name="csrf-token"]').attr('content')
+            };
+
+            $.ajax({
+                url: $(this).attr('action'),
+                method: 'POST',
+                data: formData,
+                success: function(response) {
+                    // Fermer le modal
+                    closeHoraireModal();
+                    
+                    // Rafraîchir la page ou mettre à jour le tableau
+                    window.location.reload();
+                },
+                error: function(xhr) {
+                    // Gérer les erreurs
+                    alert('Une erreur est survenue. Veuillez réessayer.');
+                    console.error(xhr);
+                }
+            });
+        });
         
         // Configuration globale pour les requêtes AJAX
         $.ajaxSetup({
