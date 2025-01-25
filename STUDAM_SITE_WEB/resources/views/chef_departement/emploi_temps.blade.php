@@ -96,7 +96,9 @@
                                                 @endphp
                                                 <div class="min-h-[40px] border border-dashed border-gray-300 rounded-md p-2 cursor-pointer hover:bg-gray-50 cell-click"
                                                      data-jour="{{ $jour }}"
-                                                     data-heure="{{ $heure }}">
+                                                     data-heure="{{ $heure }}"
+                                                     data-horaire-id="{{ $horaire ? $horaire->id : '' }}"
+                                                     onclick="openMatiereModal(this)">
                                                      @if($horaireClasseMatiere && $horaireClasseMatiere->matiere)
                                                         <div class="flex flex-col">
                                                             <span class="font-medium text-navy">{{ $horaireClasseMatiere->matiere->libelle }}</span>
@@ -175,13 +177,13 @@
     </div>
 </div>
 
-<!-- Modal pour ajouter/modifier une matière -->
+<!-- Modal pour assigner une matière -->
 <div id="matiereModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="fixed inset-0 z-10 overflow-y-auto">
-        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-            <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
-                <div class="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
-                    <button type="button" class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none" onclick="closeModal()">
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:w-full sm:max-w-lg sm:p-6">
+                <div class="absolute right-0 top-0 pr-4 pt-4">
+                    <button type="button" class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none" onclick="closeMatiereModal()">
                         <span class="sr-only">Fermer</span>
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -191,83 +193,47 @@
 
                 <div class="sm:flex sm:items-start">
                     <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                        <h3 class="text-lg font-semibold leading-6 text-gray-900" id="modal-title">
-                            Ajouter une matière
+                        <h3 class="text-lg font-semibold leading-6 text-gray-900 mb-4">
+                            Assigner une matière
                         </h3>
-
-                        <form id="matiereForm" class="mt-4 space-y-4">
-                            <input type="hidden" id="jour" name="jour">
-                            <input type="hidden" id="heure" name="heure">
-                            <input type="hidden" name="classe_id" value="{{ $classe->id }}">
-
+                        <form id="assignerMatiereForm" class="space-y-4">
+                            @csrf
+                            <input type="hidden" id="horaire_id" name="horaire_id">
+                            <input type="hidden" id="classe_id" name="classe_id" value="{{ $classe->id }}">
+                            
                             <div>
-                                <label for="nom_matiere" class="block text-sm font-medium text-gray-700">Nom de la matière</label>
-                                <input type="text" name="nom_matiere" id="nom_matiere" required
-                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm">
-                            </div>
-
-                            <div>
-                                <label for="code_matiere" class="block text-sm font-medium text-gray-700">Code de la matière</label>
-                                <input type="text" name="code_matiere" id="code_matiere" required
-                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm">
+                                <label for="matiere_id" class="block text-sm font-medium text-gray-700">Matière</label>
+                                <select id="matiere_id" name="matiere_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange">
+                                    <option value="">Sélectionnez une matière</option>
+                                    @foreach($classe->matieres as $matiere)
+                                        <option value="{{ $matiere->id }}">{{ $matiere->libelle }} ({{ $matiere->code }})</option>
+                                    @endforeach
+                                </select>
                             </div>
 
                             <div>
-                                <label for="enseignant_search" class="block text-sm font-medium text-gray-700">Rechercher un enseignant</label>
-                                <input type="text" id="enseignant_search"
-                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
-                                       placeholder="Commencez à taper le nom...">
-                                <div id="enseignants_list" class="mt-1 hidden">
-                                    <ul class="max-h-32 overflow-auto rounded-md border border-gray-300 bg-white"></ul>
-                                </div>
+                                <label for="enseignant_id" class="block text-sm font-medium text-gray-700">Enseignant</label>
+                                <select id="enseignant_id" name="enseignant_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange">
+                                    <option value="">Sélectionnez un enseignant</option>
+                                    @foreach($enseignants as $enseignant)
+                                        <option value="{{ $enseignant->id }}">{{ $enseignant->nom }}</option>
+                                    @endforeach
+                                </select>
                             </div>
 
-                            <div id="existing_enseignant" class="hidden">
-                                <input type="hidden" name="enseignant_id" id="enseignant_id">
-                                <div class="mt-2 p-2 bg-gray-50 rounded-md">
-                                    <span class="text-sm font-medium text-gray-900" id="selected_enseignant_name"></span>
-                                    <button type="button" onclick="clearEnseignant()" class="ml-2 text-sm text-red-600 hover:text-red-500">
-                                        Changer
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div id="nouveau_enseignant" class="space-y-4">
-                                <div>
-                                    <label for="nouveau_enseignant_nom" class="block text-sm font-medium text-gray-700">Nom de l'enseignant</label>
-                                    <input type="text" name="nouveau_enseignant[nom]" id="nouveau_enseignant_nom"
-                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm">
-                                </div>
-
-                                <div>
-                                    <label for="nouveau_enseignant_email" class="block text-sm font-medium text-gray-700">Email de l'enseignant</label>
-                                    <input type="email" name="nouveau_enseignant[email]" id="nouveau_enseignant_email"
-                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm">
-                                </div>
-
-                                <div>
-                                    <label for="nouveau_enseignant_password" class="block text-sm font-medium text-gray-700">Mot de passe</label>
-                                    <input type="password" name="nouveau_enseignant[password]" id="nouveau_enseignant_password"
-                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm">
-                                </div>
+                            <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                                <button type="submit"
+                                        class="inline-flex w-full justify-center rounded-md bg-orange px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange sm:ml-3 sm:w-auto">
+                                    Valider
+                                </button>
+                                <button type="button" onclick="closeMatiereModal()"
+                                        class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                                    Annuler
+                                </button>
                             </div>
                         </form>
                     </div>
                 </div>
-
-                <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-                    <button type="submit" form="matiereForm"
-                            class="inline-flex w-full justify-center rounded-md bg-orange px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-dark sm:ml-3 sm:w-auto">
-                        Enregistrer
-                    </button>
-                    <button type="button" onclick="closeModal()"
-                            class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
-                        Annuler
-                    </button>
-                </div>
-
-            
-
             </div>
         </div>
     </div>
@@ -320,6 +286,61 @@
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             }
+        });
+
+        // Fonction pour fermer le modal
+        window.closeMatiereModal = function() {
+            $('#matiereModal').addClass('hidden');
+        }
+
+        // Fonction pour ouvrir le modal
+        window.openMatiereModal = function(element) {
+            const horaireId = $(element).data('horaire-id');
+            $('#horaire_id').val(horaireId);
+            $('#matiereModal').removeClass('hidden');
+        }
+
+        // Soumission du formulaire d'assignation
+        $('#assignerMatiereForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                horaire_id: $('#horaire_id').val(),
+                classe_id: $('#classe_id').val(),
+                matiere_id: $('#matiere_id').val(),
+                enseignant_id: $('#enseignant_id').val(),
+                _token: $('meta[name="csrf-token"]').attr('content')
+            };
+
+            $.ajax({
+                url: '{{ route("chef_departement.store_matiere_enseignant") }}',
+                method: 'POST',
+                data: formData,
+                success: function(response) {
+                    closeMatiereModal();
+                    window.location.reload();
+                },
+                error: function(xhr) {
+                    alert('Une erreur est survenue. Veuillez réessayer.');
+                    console.error(xhr);
+                }
+            });
+        });
+
+        // Mise à jour de l'enseignant quand la matière change
+        $('#matiere_id').on('change', function() {
+            const matiereId = $(this).val();
+            if (!matiereId) return;
+
+            $.get(`/chef-departement/enseignants?matiere_id=${matiereId}`, function(data) {
+                const enseignantSelect = $('#enseignant_id');
+                enseignantSelect.empty();
+                enseignantSelect.append('<option value="">Sélectionnez un enseignant</option>');
+                
+                data.forEach(function(enseignant) {
+                    enseignantSelect.append(`<option value="${enseignant.id}">${enseignant.nom}</option>`);
+                });
+            });
         });
 
         // Gestionnaire de soumission du formulaire
