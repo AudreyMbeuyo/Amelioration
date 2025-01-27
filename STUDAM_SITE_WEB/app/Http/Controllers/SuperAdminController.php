@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Classe;
 use App\Models\Etudiant;
+use App\Models\Enseignant;
 use App\Models\Departement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -14,23 +15,22 @@ class SuperAdminController extends Controller
 {
     public function index()
     {
-        $departements = Departement::with('chefDepartement')->get();
+        $departements = Departement::all();
         return view('superadmin.index', compact('departements'));
     }
 
     public function createDepartement(Request $request)
     {
         $request->validate([
-            'nom' => 'required|string|max:255|unique:departements,nom',
+            'nom' => 'required|string|max:255|unique:departements,nom'
         ]);
 
         try {
             Departement::create([
-                'nom' => $request->nom,
+                'nom' => $request->nom
             ]);
 
-            return redirect()->route('superadmin.index')
-                           ->with('success', 'Département créé avec succès.');
+            return redirect()->back()->with('success', 'Département créé avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()
                            ->with('error', 'Une erreur est survenue lors de la création du département.')
@@ -42,35 +42,33 @@ class SuperAdminController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => 'required|string|email|max:255|unique:enseignants,email',
             'password' => 'required|string|min:8',
-            'departement_id' => 'required|exists:departements,id',
+            'departement_id' => 'required|exists:departements,id'
         ]);
 
-        // Vérifier si le département a déjà un chef
-        $existingChef = User::where('departement_id', $request->departement_id)
-                           ->where('role', 'chef_departement')
-                           ->first();
-
-        if ($existingChef) {
-            return redirect()->back()
-                           ->with('error', 'Ce département a déjà un chef assigné.')
-                           ->withInput();
-        }
-
-        DB::beginTransaction();
         try {
-            $user = User::create([
-                'name' => $request->name,
+            // Vérifier si le département a déjà un chef
+            $existingChef = Enseignant::where('departement_id', $request->departement_id)->first();
+
+            if ($existingChef) {
+                return redirect()->back()
+                               ->with('error', 'Ce département a déjà un chef assigné.')
+                               ->withInput();
+            }
+
+            DB::beginTransaction();
+
+            // Créer l'enseignant
+            $enseignant = Enseignant::create([
+                'nom' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'role' => 'chef_departement',
-                'departement_id' => $request->departement_id,
+                'departement_id' => $request->departement_id
             ]);
 
             DB::commit();
-            return redirect()->route('superadmin.index')
-                           ->with('success', 'Chef de département créé avec succès.');
+            return redirect()->back()->with('success', 'Chef de département créé avec succès.');
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()
@@ -81,14 +79,11 @@ class SuperAdminController extends Controller
 
     public function deleteChefDepartement($id)
     {
-        $chef = User::where('id', $id)
-                    ->where('role', 'chef_departement')
-                    ->firstOrFail();
-
         try {
-            $chef->delete();
-            return redirect()->route('superadmin.index')
-                           ->with('success', 'Chef de département supprimé avec succès.');
+            $enseignant = Enseignant::findOrFail($id);
+            $enseignant->delete();
+
+            return redirect()->back()->with('success', 'Chef de département supprimé avec succès.');
         } catch (\Exception $e) {
             return redirect()->back()
                            ->with('error', 'Une erreur est survenue lors de la suppression.');

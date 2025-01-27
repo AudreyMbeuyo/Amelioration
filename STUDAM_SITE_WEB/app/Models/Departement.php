@@ -26,6 +26,6 @@ class Departement extends Model
 
     public function chefDepartement()
     {
-        return $this->hasOne(User::class)->where('role', 'chef_departement');
+        return $this->hasOne(Enseignant::class);
     }
 }
