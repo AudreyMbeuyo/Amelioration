@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\ChefDepartementController;
 use App\Http\Controllers\MatiereController;
 use App\Http\Controllers\HoraireController;
+use App\Http\Controllers\SuperAdminController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -35,3 +36,12 @@ Route::middleware(['auth', \App\Http\Middleware\ChefDepartementMiddleware::class
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
 });
+
+// Routes pour le SuperAdmin
+Route::get('/superadmin', [SuperAdminController::class, 'index'])->name('superadmin.index');
+Route::post('/superadmin/departement', [SuperAdminController::class, 'createDepartement'])->name('superadmin.create_departement');
+Route::post('/superadmin/chef-departement', [SuperAdminController::class, 'createChefDepartement'])->name('superadmin.create_chef');
+Route::delete('/superadmin/chef-departement/{id}', [SuperAdminController::class, 'deleteChefDepartement'])->name('superadmin.delete_chef');
+Route::post('/superadmin/import-etudiants', [SuperAdminController::class, 'importEtudiants'])->name('superadmin.import_etudiants');
+Route::get('/superadmin/classes/{departement_id}', [SuperAdminController::class, 'getClassesByDepartement'])->name('superadmin.get_classes');
+Route::get('/superadmin/sample-csv', [SuperAdminController::class, 'downloadSampleCSV'])->name('superadmin.sample_csv');
