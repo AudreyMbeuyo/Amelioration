@@ -119,6 +119,8 @@ class ChefDepartementController extends Controller
             'classe' => $classe,
             'heures' => $heures,
         ]);
+        
+        $pdf->setPaper('a4', 'landscape');
 
         return $pdf->download('emploi_du_temps_' . $classe->nom . '.pdf');
     }

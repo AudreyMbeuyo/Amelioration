@@ -7,10 +7,11 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+            padding-bottom: 50px;
         }
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         .school-name {
             font-size: 24px;
@@ -30,9 +31,9 @@
         }
         th, td {
             border: 1px solid #cbd5e0;
-            padding: 8px;
+            padding: 6px;
             text-align: center;
-            font-size: 12px;
+            font-size: 11px;
         }
         th {
             background-color: #f8fafc;
@@ -44,12 +45,28 @@
             color: #2d3748;
         }
         .enseignant {
-            font-size: 10px;
+            font-size: 9px;
             color: #4a5568;
         }
         .code {
-            font-size: 10px;
+            font-size: 9px;
             color: #718096;
+        }
+        .signature {
+            margin-top: 40px;
+            text-align: right;
+            padding-right: 50px;
+        }
+        .signature-line {
+            margin-top: 50px;
+            border-top: 1px solid #000;
+            width: 200px;
+            display: inline-block;
+        }
+        .signature-text {
+            font-size: 12px;
+            color: #2d3748;
+            margin-top: 5px;
         }
     </style>
 </head>
@@ -99,5 +116,10 @@
             @endforeach
         </tbody>
     </table>
+
+    <div class="signature">
+        <div class="signature-line"></div>
+        <div class="signature-text">Signature du Chef de Département</div>
+    </div>
 </body>
 </html>
