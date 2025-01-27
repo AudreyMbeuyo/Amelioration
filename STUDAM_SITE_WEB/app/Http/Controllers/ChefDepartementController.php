@@ -107,4 +107,19 @@ class ChefDepartementController extends Controller
 
         return response()->json(['message' => 'Matière assignée avec succès']);
     }
+
+    public function exportPDF($classe_id)
+    {
+        $classe = Classe::findOrFail($classe_id);
+        $heures = Horaire::distinct()->select('heure_debut', 'heure_fin')->get()->map(function ($horaire) {
+            return $horaire->heure_debut . ' - ' . $horaire->heure_fin;
+        })->toArray();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('chef_departement.emploi_temps_pdf', [
+            'classe' => $classe,
+            'heures' => $heures,
+        ]);
+
+        return $pdf->download('emploi_du_temps_' . $classe->nom . '.pdf');
+    }
 }

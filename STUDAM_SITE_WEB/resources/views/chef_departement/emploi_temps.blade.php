@@ -42,12 +42,21 @@
                     <h2 class="text-lg leading-6 font-medium text-navy">
                         Emploi du Temps - {{ $classe->nom }}
                     </h2>
-                    <button id="add-horaire-btn" class="bg-orange hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transform transition-all duration-200 hover:scale-105 flex items-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                        </svg>
-                        Ajouter une horaire
-                    </button>
+                    <div class="flex space-x-4">
+                        <a href="{{ route('chef_departement.export_pdf', $classe->id) }}" 
+                           class="bg-navy hover:bg-navy-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transform transition-all duration-200 hover:scale-105 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Exporter en PDF
+                        </a>
+                        <button id="add-horaire-btn" class="bg-orange hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transform transition-all duration-200 hover:scale-105 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                            Ajouter une horaire
+                        </button>
+                    </div>
                 </div>
 
                 <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
