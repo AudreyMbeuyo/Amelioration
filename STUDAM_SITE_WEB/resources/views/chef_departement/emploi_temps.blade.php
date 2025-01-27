@@ -211,16 +211,6 @@
                                 </select>
                             </div>
 
-                            <div>
-                                <label for="enseignant_id" class="block text-sm font-medium text-gray-700">Enseignant</label>
-                                <select id="enseignant_id" name="enseignant_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange">
-                                    <option value="">Sélectionnez un enseignant</option>
-                                    @foreach($enseignants as $enseignant)
-                                        <option value="{{ $enseignant->id }}">{{ $enseignant->nom }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
                             <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
                                 <button type="submit"
                                         class="inline-flex w-full justify-center rounded-md bg-orange px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange sm:ml-3 sm:w-auto">
@@ -308,7 +298,6 @@
                 horaire_id: $('#horaire_id').val(),
                 classe_id: $('#classe_id').val(),
                 matiere_id: $('#matiere_id').val(),
-                enseignant_id: $('#enseignant_id').val(),
                 _token: $('meta[name="csrf-token"]').attr('content')
             };
 
@@ -321,154 +310,15 @@
                     window.location.reload();
                 },
                 error: function(xhr) {
-                    alert('Une erreur est survenue. Veuillez réessayer.');
+                    if (xhr.status === 422) {
+                        alert(xhr.responseJSON.message);
+                    } else {
+                        alert('Une erreur est survenue. Veuillez réessayer.');
+                    }
                     console.error(xhr);
                 }
             });
         });
-
-        // Mise à jour de l'enseignant quand la matière change
-        $('#matiere_id').on('change', function() {
-            const matiereId = $(this).val();
-            if (!matiereId) return;
-
-            $.get(`/chef-departement/enseignants?matiere_id=${matiereId}`, function(data) {
-                const enseignantSelect = $('#enseignant_id');
-                enseignantSelect.empty();
-                enseignantSelect.append('<option value="">Sélectionnez un enseignant</option>');
-                
-                data.forEach(function(enseignant) {
-                    enseignantSelect.append(`<option value="${enseignant.id}">${enseignant.nom}</option>`);
-                });
-            });
-        });
-
-        // Gestionnaire de soumission du formulaire
-        $('#matiereForm').on('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            
-            // Log des données envoyées
-            for (let pair of formData.entries()) {
-                console.log(pair[0] + ': ' + pair[1]);
-            }
-            
-            // Réinitialiser les messages d'erreur
-            $('.error-message').remove();
-            $('.border-red-500').removeClass('border-red-500');
-            
-            $.ajax({                   
-                url: '{{ route('chef_departement.store_matiere_enseignant') }}',
-                method: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function(response) {
-                    console.log('Succès:', response);
-                    if (response.success) {
-                        location.reload();
-                    }
-                },
-                error: function(xhr) {
-                    console.log('Erreur complète:', xhr);
-                    console.log('Status:', xhr.status);
-                    console.log('Response:', xhr.responseJSON);
-                    
-                    if (xhr.status === 422) {
-                        const errors = xhr.responseJSON.errors;
-                        console.log('Erreurs de validation:', errors);
-                        
-                        Object.keys(errors).forEach(function(field) {
-                            const errorMessage = errors[field][0];
-                            console.log('Champ:', field, 'Message:', errorMessage);
-                            
-                            if (field.includes('.')) {
-                                // Pour les champs imbriqués comme nouveau_enseignant.nom
-                                const parts = field.split('.');
-                                const input = $(`[name="${parts[0]}[${parts[1]}]"]`);
-                                input.addClass('border-red-500');
-                                input.after(`<p class="text-red-500 text-xs mt-1 error-message">${errorMessage}</p>`);
-                            } else {
-                                // Pour les champs simples
-                                const input = $(`[name="${field}"]`);
-                                input.addClass('border-red-500');
-                                input.after(`<p class="text-red-500 text-xs mt-1 error-message">${errorMessage}</p>`);
-                            }
-                        });
-                    } else {
-                        alert('Une erreur est survenue lors de la communication avec le serveur.');
-                    }
-                }
-            });
-            
-            return false;
-        });
-
-        // Gestionnaire de clic pour ouvrir le modal
-        $('.cell-click').on('click', function() {
-            const jour = $(this).data('jour');
-            const heure = $(this).data('heure');
-            openModal(jour, heure);
-        });
     });
-
-    function openModal(jour, heure) {
-        $('#jour').val(jour);
-        $('#heure').val(heure);
-        $('#matiereModal').removeClass('hidden');
-    }
-
-    function closeModal() {
-        $('#matiereModal').addClass('hidden');
-        $('#matiereForm')[0].reset();
-        $('#existing_enseignant').addClass('hidden');
-        $('#nouveau_enseignant').removeClass('hidden');
-        $('#enseignants_list').addClass('hidden');
-    }
-
-    function clearEnseignant() {
-        $('#existing_enseignant').addClass('hidden');
-        $('#nouveau_enseignant').removeClass('hidden');
-        $('#enseignant_id').val('');
-    }
-
-    let searchTimeout;
-    $('#enseignant_search').on('input', function() {
-        clearTimeout(searchTimeout);
-        const search = $(this).val();
-        
-        if (search.length < 2) {
-            $('#enseignants_list').addClass('hidden');
-            return;
-        }
-
-        searchTimeout = setTimeout(() => {
-            $.get('{{ route('chef_departement.get_enseignants') }}', { search: search })
-                .done(function(data) {
-                    const list = $('#enseignants_list');
-                    list.removeClass('hidden');
-                    const ul = list.find('ul');
-                    ul.empty();
-                    
-                    data.forEach(enseignant => {
-                        const li = $('<li>')
-                            .addClass('px-4 py-2 hover:bg-gray-100 cursor-pointer')
-                            .text(enseignant.nom)
-                            .on('click', () => selectEnseignant(enseignant));
-                        ul.append(li);
-                    });
-                });
-        }, 300);
-    });
-
-    function selectEnseignant(enseignant) {
-        $('#enseignant_id').val(enseignant.id);
-        $('#selected_enseignant_name').text(enseignant.nom);
-        $('#existing_enseignant').removeClass('hidden');
-        $('#nouveau_enseignant').addClass('hidden');
-        $('#enseignants_list').addClass('hidden');
-        $('#enseignant_search').val('');
-    }
 </script>
 @endpush

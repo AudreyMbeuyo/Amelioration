@@ -77,25 +77,31 @@ class ChefDepartementController extends Controller
             'horaire_id' => 'required|exists:horaires,id',
             'classe_id' => 'required|exists:classes,id',
             'matiere_id' => 'required|exists:matieres,id',
-            'enseignant_id' => 'required|exists:enseignants,id',
         ]);
+
+        // Récupérer la matière avec son enseignant
+        $matiere = Matiere::with('enseignant')->findOrFail($request->matiere_id);
+        
+        if (!$matiere->enseignant) {
+            return response()->json(['message' => 'Cette matière n\'a pas d\'enseignant assigné'], 422);
+        }
 
         // Vérifier si l'horaire est déjà assigné
         $existingAssignment = HoraireClasseMatiere::where('horaire_id', $request->horaire_id)
             ->where('classe_id', $request->classe_id)
             ->first();
-
+            
         if ($existingAssignment) {
             $existingAssignment->update([
                 'matiere_id' => $request->matiere_id,
-                'enseignant_id' => $request->enseignant_id,
+                'enseignant_id' => $matiere->enseignant->id,
             ]);
         } else {
             HoraireClasseMatiere::create([
                 'horaire_id' => $request->horaire_id,
                 'classe_id' => $request->classe_id,
                 'matiere_id' => $request->matiere_id,
-                'enseignant_id' => $request->enseignant_id,
+                'enseignant_id' => $matiere->enseignant->id,
             ]);
         }
 
