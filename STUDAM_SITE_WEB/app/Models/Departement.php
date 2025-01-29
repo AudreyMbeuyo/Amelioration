@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Enseignant;
 use App\Models\Classe;
+use App\Models\User;
 
 class Departement extends Model
 {
@@ -21,5 +22,10 @@ class Departement extends Model
     public function classes()
     {
         return $this->hasMany(Classe::class);
+    }
+
+    public function chefDepartement()
+    {
+        return $this->hasOne(Enseignant::class);
     }
 }
