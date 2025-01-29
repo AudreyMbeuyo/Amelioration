@@ -28,4 +28,8 @@ class Etudiant extends Model
     {
         return $this->hasMany(Estpresent::class);
     }
+
+    public static function findByMatricule($matricule){
+        return self::where('matricule', $matricule)->first;
+    }
 }

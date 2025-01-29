@@ -83,4 +83,9 @@ class MatiereController extends Controller
                            ->withErrors(['error' => 'Erreur lors de l\'ajout de la matière: ' . $e->getMessage()]);
         }
     }
+
+    public function showPresences(Matiere $matiere)
+    {
+        return view('presences.download', compact('matiere'));
+    }
 }

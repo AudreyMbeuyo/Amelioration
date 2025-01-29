@@ -5,6 +5,9 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\ChefDepartementController;
 use App\Http\Controllers\MatiereController;
+use App\Http\Controllers\EstPresentController;
+use App\Http\Controllers\PresenceController;
+
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -26,7 +29,14 @@ Route::middleware(['auth', \App\Http\Middleware\ChefDepartementMiddleware::class
     Route::post('/chef-departement/enseignants', [MatiereController::class, 'store'])->name('enseignants.store');
 });
 
+// Routes du dispositif
+// Route::post('/attendances', action: [EstPresentController::class, 'store']);
+// Route::post('/estpresent/store', [EstPresentController::class, 'store']);
+
 // Routes protégées
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
+    // Route::get('/export-presences/{horaireId}', [PresenceController::class, 'export']);
+    Route::get('/export-presences/{horaireId}', [PresenceController::class, 'export'])->name('export.presences');
+    Route::get('/matieres/{matiere}/presences', [MatiereController::class, 'showPresences'])->name('matieres.presences');
 });
