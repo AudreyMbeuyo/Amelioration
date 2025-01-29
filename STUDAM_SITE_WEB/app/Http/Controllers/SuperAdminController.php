@@ -151,9 +151,9 @@ class SuperAdminController extends Controller
 
         $handle = fopen('php://temp', 'w+');
         fputcsv($handle, ['Matricule', 'Nom Complet']);
-        fputcsv($handle, ['20A123', 'Jean Dupont']);
-        fputcsv($handle, ['20A124', 'Marie Martin']);
-        fputcsv($handle, ['20A125', 'Pierre Dubois']);
+        fputcsv($handle, ['20A123', 'NOUKOUA MAEVA']);
+        fputcsv($handle, ['20A124', 'DONCHI TRESOR']);
+        fputcsv($handle, ['20A125', 'TCHASSI DANIEL']);
         
         rewind($handle);
         $content = stream_get_contents($handle);

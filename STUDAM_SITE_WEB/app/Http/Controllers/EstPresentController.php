@@ -17,7 +17,7 @@ class EstPresentController extends Controller
         $data = $this->formatJson($request->getContent());
         error_log('Raw Request Content: ' . $request->getContent());
         if ($data === null) {
-            return response()->json(['message' => 'Invalid data format'], 400);
+            return response()->json(['message' => 'Invalid data format 100'], 400);
         }
         
         $validated = Validator::make($data, [
@@ -128,7 +128,7 @@ class EstPresentController extends Controller
         }
         
         // Validate required keys exist
-        if (!isset($data['id']) || !isset($data['teacher']) || !isset($data['timestamp'])) {
+        if (!isset($data['id']) || !isset($data['teacherId']) || !isset($data['timestamp'])) {
             return null;
         }
         
