@@ -13,7 +13,7 @@ class DatabaseSeeder extends Seeder
             EnseignantSeeder::class,
             ClasseSeeder::class,
             EtudiantSeeder::class,
-            // HoraireSeeder::class,
+            HoraireSeeder::class,
             MatiereSeeder::class,
             // HoraireMatiereSeeder::class,
             MatiereClasseSeeder::class
