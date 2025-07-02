@@ -1,8 +1,9 @@
 "use client";
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import authService from '@/services/AuthService';
 
 export default function Register() {
   const router = useRouter();
@@ -18,16 +19,23 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
 
+  useEffect(() => {
+    // Vérifier si l'utilisateur est déjà connecté
+    if (authService.isAuthenticated()) {
+      const redirectPath = authService.getRedirectPath();
+      router.push(redirectPath);
+    }
+  }, [router]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log(`🔄 Changement de champ: ${name} = ${value}`);
 
     setFormData(prevState => ({
       ...prevState,
       [name]: value
     }));
 
-    // Effacer l'erreur si l'utilisateur commence à taper
+    // Effacer les erreurs lors de la saisie
     if (errors[name]) {
       setErrors(prevErrors => ({
         ...prevErrors,
@@ -44,10 +52,17 @@ export default function Register() {
         }));
       }
     }
+
+    // Effacer l'erreur générale
+    if (errors.general) {
+      setErrors(prevErrors => ({
+        ...prevErrors,
+        general: ''
+      }));
+    }
   };
 
   const validateForm = () => {
-    console.log('🔍 Validation du formulaire...');
     const newErrors = {};
 
     // Validation du nom
@@ -85,19 +100,15 @@ export default function Register() {
       newErrors.role = "Le rôle est requis";
     }
 
-    console.log('✅ Erreurs de validation:', newErrors);
     return newErrors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('🚀 Début de la soumission du formulaire');
 
-    // Validation
+    // Validation côté client
     const newErrors = validateForm();
-
     if (Object.keys(newErrors).length > 0) {
-      console.log('❌ Validation échouée:', newErrors);
       setErrors(newErrors);
       return;
     }
@@ -106,147 +117,25 @@ export default function Register() {
     setErrors({});
 
     try {
-      // Préparer les données pour l'API
-      const registrationData = {
-        nom: formData.nom.trim(),
-        email: formData.email.trim().toLowerCase(),
-        password: formData.password,
-        password_confirmation: formData.password_confirmation,
-        role: formData.role
-      };
+      // Utiliser le service d'authentification
+      const response = await authService.register(formData);
 
-      console.log('📤 Données à envoyer à l\'API:', {
-        ...registrationData,
-        password: '***masqué***',
-        password_confirmation: '***masqué***'
-      });
-
-      const apiUrl = 'http://agence-voyage.ddns.net:9026/api/user/register';
-      console.log('🌐 URL de l\'API:', apiUrl);
-
-      // Appel API vers le vrai backend
-      console.log('📡 Envoi de la requête...');
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(registrationData),
-      });
-
-      console.log('📥 Réponse reçue:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries())
-      });
-
-      if (!response.ok) {
-        console.log('❌ Réponse non OK, status:', response.status);
-
-        let errorData = {};
-        try {
-          errorData = await response.json();
-          console.log('📄 Données d\'erreur du serveur:', errorData);
-        } catch (parseError) {
-          console.log('⚠️ Impossible de parser la réponse d\'erreur:', parseError);
-          errorData = {};
-        }
-
-        if (response.status === 400) {
-          console.log('🔍 Erreur 400 - Données invalides');
-          // Erreurs de validation du serveur
-          if (errorData.errors) {
-            setErrors(errorData.errors);
-          } else {
-            setErrors({
-              general: errorData.message || 'Données invalides'
-            });
-          }
-        } else if (response.status === 409) {
-          console.log('🔍 Erreur 409 - Conflit (email déjà utilisé)');
-          setErrors({
-            email: 'Cette adresse email est déjà utilisée'
-          });
-        } else if (response.status === 500) {
-          console.log('🔍 Erreur 500 - Erreur serveur interne');
-          setErrors({
-            general: 'Erreur serveur. Veuillez réessayer plus tard.'
-          });
-        } else {
-          console.log(`🔍 Erreur ${response.status} - Autre erreur`);
-          setErrors({
-            general: errorData.message || 'Une erreur est survenue lors de l\'inscription'
-          });
-        }
-        return;
-      }
-
-      console.log('✅ Réponse OK, traitement des données...');
-      const data = await response.json();
-      console.log('📄 Données de réponse:', data);
-
-      // Vérifier la réponse du serveur
-      if (data.success || data.token || data.user) {
-        console.log('🎉 Inscription réussie !');
-
-        // Inscription réussie
-        if (data.token) {
-          console.log('🔐 Token reçu, auto-connexion...');
-          // Auto-connexion si un token est fourni
-          localStorage.setItem('authToken', data.token);
-          localStorage.setItem('user', JSON.stringify(data.user || data));
-          console.log('💾 Données utilisateur sauvegardées dans localStorage');
-          console.log('➡️ Redirection vers /dashboard');
-          router.push('/dashboard');
-        } else {
-          console.log('➡️ Redirection vers /auth/login avec message de succès');
-          // Redirection vers la page de connexion avec message de succès
-          router.push('/auth/login?message=inscription-reussie');
-        }
+      if (response.autoLogin) {
+        // Auto-connexion réussie, rediriger vers le dashboard
+        const redirectPath = authService.getRedirectPath();
+        router.push(redirectPath);
       } else {
-        console.log('❌ Réponse inattendue du serveur');
-        setErrors({
-          general: 'Inscription échouée. Veuillez réessayer.'
-        });
+        // Redirection vers la page de connexion avec message de succès
+        router.push('/auth/login?message=inscription-reussie');
       }
 
     } catch (error) {
-      console.error('💥 Erreur lors de l\'inscription:', error);
-      console.log('📊 Détails de l\'erreur:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      });
-
-      setErrors({
-        general: 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.'
-      });
+      // Gestion des erreurs spécifiques
+      setErrors({ general: error.message });
     } finally {
-      console.log('🏁 Fin du processus d\'inscription');
       setIsLoading(false);
     }
   };
-
-  // Icône SVG pour l'œil
-  const EyeIcon = ({ visible, onClick }) => (
-      <button
-          type="button"
-          className="absolute inset-y-0 right-0 pr-3 flex items-center"
-          onClick={onClick}
-      >
-        {visible ? (
-            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-            </svg>
-        ) : (
-            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/>
-            </svg>
-        )}
-      </button>
-  );
 
   return (
       <div className="min-h-screen bg-gradient-to-br from-[#1B396A] to-[#2A5490] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -275,8 +164,15 @@ export default function Register() {
               {/* Message d'erreur général */}
               {errors.general && (
                   <div className="bg-red-50 border border-red-200 rounded-md p-4">
-                    <div className="text-sm text-red-700">
-                      {errors.general}
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm text-red-700">{errors.general}</p>
+                      </div>
                     </div>
                   </div>
               )}
@@ -291,6 +187,7 @@ export default function Register() {
                       id="nom"
                       name="nom"
                       type="text"
+                      autoComplete="name"
                       value={formData.nom}
                       onChange={handleChange}
                       className={`appearance-none relative block w-full px-3 py-3 border ${errors.nom ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
@@ -310,6 +207,7 @@ export default function Register() {
                       id="email"
                       name="email"
                       type="email"
+                      autoComplete="email"
                       value={formData.email}
                       onChange={handleChange}
                       className={`appearance-none relative block w-full px-3 py-3 border ${errors.email ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
@@ -352,15 +250,28 @@ export default function Register() {
                         id="password"
                         name="password"
                         type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
                         value={formData.password}
                         onChange={handleChange}
                         className={`appearance-none relative block w-full px-3 py-3 pr-10 border ${errors.password ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
                         placeholder="Entrez votre mot de passe"
                     />
-                    <EyeIcon
-                        visible={showPassword}
+                    <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
                         onClick={() => setShowPassword(!showPassword)}
-                    />
+                    >
+                      {showPassword ? (
+                          <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/>
+                          </svg>
+                      ) : (
+                          <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                          </svg>
+                      )}
+                    </button>
                   </div>
                   {errors.password && (
                       <p className="mt-1 text-sm text-red-600">{errors.password}</p>
@@ -380,15 +291,28 @@ export default function Register() {
                         id="password_confirmation"
                         name="password_confirmation"
                         type={showPasswordConfirm ? "text" : "password"}
+                        autoComplete="new-password"
                         value={formData.password_confirmation}
                         onChange={handleChange}
                         className={`appearance-none relative block w-full px-3 py-3 pr-10 border ${errors.password_confirmation ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
                         placeholder="Confirmez votre mot de passe"
                     />
-                    <EyeIcon
-                        visible={showPasswordConfirm}
+                    <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
                         onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                    />
+                    >
+                      {showPasswordConfirm ? (
+                          <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/>
+                          </svg>
+                      ) : (
+                          <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                          </svg>
+                      )}
+                    </button>
                   </div>
                   {errors.password_confirmation && (
                       <p className="mt-1 text-sm text-red-600">{errors.password_confirmation}</p>
@@ -406,9 +330,9 @@ export default function Register() {
                     required
                 />
                 <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
-                  J&apos; accepte les{' '}
+                  J&apos;accepte les{' '}
                   <Link href="/terms" className="text-[#F26419] hover:text-[#E55A1A] underline">
-                    conditions d&apos; utilisation
+                    conditions d&apos;utilisation
                   </Link>
                   {' '}
                   et la{' '}
