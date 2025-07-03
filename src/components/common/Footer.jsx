@@ -9,7 +9,7 @@ export default function ModernFooter() {
     product: [
       { name: 'Fonctionnalités', href: '#features' },
       { name: 'Tableaux de bord', href: '/dashboard' },
-      { name: 'Rapports', href: '/reports' },
+      { name: 'Rapports', href: '/pending' },
       { name: 'Gestion des utilisateurs', href: '/admin' },
       { name: 'API Documentation', href: '/api-docs' }
     ],

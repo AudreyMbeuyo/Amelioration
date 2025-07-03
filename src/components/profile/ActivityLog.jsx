@@ -32,7 +32,7 @@ const ActivityLog = () => {
         },
         {
           id: 3,
-          type: 'timetable',
+          type: 'timetables',
           description: 'Modification de l\'emploi du temps - Ajout d\'un cours de Réseaux (4GI)',
           date: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
           icon: (

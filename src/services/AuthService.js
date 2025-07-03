@@ -357,7 +357,7 @@ class AuthenticationService {
                 return '/teacher/dashboard';
             case 'STUDENT':
             case 'student':
-                return '/student/dashboard';
+                return '/students/dashboard';
             default:
                 return defaultPath;
         }

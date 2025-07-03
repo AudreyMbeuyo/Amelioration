@@ -73,7 +73,7 @@ export default function FeaturesPage() {
                 "Programmation d'envoi par email"
             ],
             gradient: "from-orange-500 to-red-500",
-            image: "/features/reports.svg"
+            image: "/features/pending.svg"
         },
         {
             icon: (

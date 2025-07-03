@@ -572,7 +572,7 @@ export const TimetableService = {
    * @returns {Promise<Object>} Confirmation d'ajout
    */
   addSchedule: async (scheduleData) => {
-    return ApiService.fetchApi('/timetable/schedule', 'POST', scheduleData);
+    return ApiService.fetchApi('/timetables/schedule', 'POST', scheduleData);
   },
 
   /**

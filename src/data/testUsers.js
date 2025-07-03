@@ -131,7 +131,7 @@ export const TEST_SCENARIOS = {
             },
             {
                 action: 'access_dept_pages',
-                pages: ['/timetable', '/admin/teachers', '/subjects'],
+                pages: ['/timetables', '/admin/teachers', '/subjects'],
                 expected: 'Accès autorisé aux pages de gestion départementale'
             }
         ]
