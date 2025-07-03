@@ -306,13 +306,13 @@ export const StudentService = {
 };
 
 /**
- * Service de gestion des classes
+ * Service de gestion des courses
  */
 export const ClassService = {
   /**
-   * Récupère la liste des classes
+   * Récupère la liste des courses
    * @param {Object} params - Paramètres de filtrage
-   * @returns {Promise<Array>} Liste des classes
+   * @returns {Promise<Array>} Liste des courses
    */
   getClasses: async (params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
@@ -335,7 +335,7 @@ export const ClassService = {
    * @returns {Promise<Object>} Les données de la classe créée
    */
   createClass: async (classData) => {
-    return ApiService.fetchApi('/classes', 'POST', classData);
+    return ApiService.fetchApi('/courses', 'POST', classData);
   },
 
   /**
@@ -470,9 +470,9 @@ export const DepartmentService = {
   },
 
   /**
-   * Récupère les classes d'un département
+   * Récupère les courses d'un département
    * @param {string} id - L'ID du département
-   * @returns {Promise<Array>} Liste des classes du département
+   * @returns {Promise<Array>} Liste des courses du département
    */
   getDepartmentClasses: async (id) => {
     return ApiService.fetchApi(`/departments/${id}/classes`);

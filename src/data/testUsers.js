@@ -21,7 +21,7 @@ export const TEST_USERS = {
         description: '🔑 Accès complet : gestion utilisateurs, départements, système',
         permissions: [
             'Créer/modifier/supprimer tous les utilisateurs',
-            'Gérer tous les départements et classes',
+            'Gérer tous les départements et courses',
             'Accès aux rapports système complets',
             'Configuration générale de l\'application',
             'Gestion des rôles et permissions'
@@ -42,7 +42,7 @@ export const TEST_USERS = {
             'Créer et modifier les emplois du temps',
             'Ajouter/modifier les matières du département',
             'Voir les rapports de présence du département',
-            'Gérer les classes du département'
+            'Gérer les courses du département'
         ]
     },
 
@@ -57,7 +57,7 @@ export const TEST_USERS = {
         description: '📚 Enseignement et gestion des présences de ses cours',
         permissions: [
             'Prendre les présences pour ses cours',
-            'Voir les listes d\'étudiants de ses classes',
+            'Voir les listes d\'étudiants de ses courses',
             'Générer des rapports de présence pour ses matières',
             'Consulter les emplois du temps',
             'Modifier les informations de ses cours'
@@ -156,7 +156,7 @@ export const TEST_SCENARIOS = {
             },
             {
                 action: 'access_teacher_pages',
-                pages: ['/presence', '/subjects', '/classes'],
+                pages: ['/attendance', '/subjects', '/courses'],
                 expected: 'Accès autorisé aux pages d\'enseignement'
             }
         ]

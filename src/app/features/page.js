@@ -188,7 +188,7 @@ export default function FeaturesPage() {
         {
             title: "Pour les Chefs de Département",
             items: [
-                "Suivi des enseignants et classes",
+                "Suivi des enseignants et courses",
                 "Planification des emplois du temps",
                 "Analyses par département",
                 "Gestion des matières et salles"

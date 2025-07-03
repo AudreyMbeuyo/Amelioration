@@ -39,7 +39,7 @@ const SubjectList = ({ subjects }) => {
             </div>
             <div>
               <Link 
-                href={`/subjects/${subject.id}/attendance`}
+                href={`/src/app/chief/subjects/${subject.id}/attendance`}
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-[#F26419] hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F26419]"
               >
                 Voir les présences

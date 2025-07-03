@@ -21,7 +21,7 @@ const ActivityLog = () => {
         },
         {
           id: 2,
-          type: 'presence',
+          type: 'attendance',
           description: 'Prise de présence - Programmation Web (3GI)',
           date: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
           icon: (

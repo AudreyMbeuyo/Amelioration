@@ -14,7 +14,7 @@ const StudentsFilter = ({ classes = [], departments = [], filters, onFilterChang
   }, [filters]);
 
   useEffect(() => {
-    // Filtrer les classes par département si un département est sélectionné
+    // Filtrer les courses par département si un département est sélectionné
     if (departmentId) {
       const filtered = classes.filter(c => c.departement && c.departement.id === parseInt(departmentId));
       setFilteredClasses(filtered);

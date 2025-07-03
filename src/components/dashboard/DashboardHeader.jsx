@@ -20,7 +20,7 @@ const DashboardHeader = ({ user }) => {
           <p className="mt-1 max-w-2xl text-sm text-gray-500">
             {user.role === 'chef_departement' 
               ? 'Gérez votre département' 
-              : 'Gérez vos classes et vos matières'}
+              : 'Gérez vos courses et vos matières'}
           </p>
         </div>
       </div>

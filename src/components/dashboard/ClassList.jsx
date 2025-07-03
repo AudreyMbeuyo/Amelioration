@@ -36,7 +36,7 @@ const ClassList = ({ classes }) => {
             </div>
             <div>
               <Link 
-                href={`/classes/${classe.id}`}
+                href={`/src/app/teacher/courses/${classe.id}`}
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-[#F26419] hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F26419]"
               >
                 Gérer la classe
