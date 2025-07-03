@@ -10,7 +10,7 @@ export default function Login() {
   const searchParams = useSearchParams();
 
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',      // ✅ 'username' au lieu d'email (conforme backend)
     password: ''
   });
 
@@ -23,7 +23,7 @@ export default function Login() {
     // Vérifier s'il y a un message de succès depuis l'inscription
     const message = searchParams.get('message');
     if (message === 'inscription-reussie') {
-      setSuccessMessage('Inscription réussie ! Veuillez vous connecter.');
+      setSuccessMessage('Inscription réussie ! Connectez-vous avec votre nom d\'utilisateur.');
       // Nettoyer l'URL
       window.history.replaceState({}, '', '/auth/login');
     }
@@ -62,10 +62,9 @@ export default function Login() {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.email.trim()) {
-      newErrors.email = "L'adresse email est requise";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "L'adresse email n'est pas valide";
+    // ✅ Validation pour username (pas d'email)
+    if (!formData.username.trim()) {
+      newErrors.username = "Le nom d'utilisateur est requis";
     }
 
     if (!formData.password) {
@@ -90,11 +89,11 @@ export default function Login() {
     setSuccessMessage('');
 
     try {
-      // Utiliser le service d'authentification
-      const response = await authService.login(formData.email, formData.password);
+      // ✅ Utiliser username au lieu d'email pour la connexion
+      const response = await authService.login(formData.username, formData.password);
 
       // Afficher un message de succès
-      setSuccessMessage(`Bienvenue ${response.user?.nom || 'Utilisateur'} !`);
+      setSuccessMessage(`Bienvenue ${response.user?.name || response.user?.nom || 'Utilisateur'} !`);
 
       // Redirection après un court délai
       setTimeout(() => {
@@ -112,13 +111,14 @@ export default function Login() {
 
   const handleDemoLogin = () => {
     setFormData({
-      email: 'admin@studam.edu',
-      password: 'password123'
+      username: 'admin_demo',    // ✅ Username au lieu d'email
+      password: 'AdminDemo2025!'
     });
   };
 
   return (
-      <div className="min-h-screen bg-gradient-to-br from-[#1B396A] to-[#2A5490] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      // ✅ Utilise vos Header/Footer existants - pas de fond plein écran
+      <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div className="bg-white rounded-xl shadow-2xl p-8">
             {/* Header */}
@@ -129,11 +129,8 @@ export default function Login() {
                 </svg>
               </div>
               <h1 className="text-3xl font-bold text-[#1B396A]">
-                STUDAM
-              </h1>
-              <h2 className="mt-4 text-xl font-semibold text-gray-900">
                 Connexion
-              </h2>
+              </h1>
               <p className="mt-2 text-sm text-gray-600">
                 Connectez-vous à votre compte STUDAM
               </p>
@@ -173,30 +170,33 @@ export default function Login() {
             {/* Formulaire */}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-4">
-                {/* Email */}
+                {/* ✅ Username au lieu d'Email */}
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Adresse email
+                  <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                    Nom d&apos; utilisateur *
                   </label>
                   <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                      value={formData.email}
+                      id="username"
+                      name="username"
+                      type="text"
+                      autoComplete="username"
+                      value={formData.username}
                       onChange={handleChange}
-                      className={`appearance-none relative block w-full px-3 py-3 border ${errors.email ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
-                      placeholder="Entrez votre adresse email"
+                      className={`appearance-none relative block w-full px-3 py-3 border ${errors.username ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
+                      placeholder="Entrez votre nom d'utilisateur"
                   />
-                  {errors.email && (
-                      <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                  {errors.username && (
+                      <p className="mt-1 text-sm text-red-600">{errors.username}</p>
                   )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Utilisez le nom d&apos; utilisateur créé lors de votre inscription
+                  </p>
                 </div>
 
                 {/* Mot de passe */}
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                    Mot de passe
+                    Mot de passe *
                   </label>
                   <div className="relative">
                     <input
@@ -277,9 +277,9 @@ export default function Login() {
               {/* Lien d'inscription */}
               <div className="text-center">
                 <p className="text-sm text-gray-600">
-                  Vous n&apos; avez pas encore de compte ?{' '}
+                  Vous n&apos;avez pas encore de compte ?{' '}
                   <Link href="/auth/register" className="font-medium text-[#F26419] hover:text-[#E55A1A] underline">
-                    S&apos; inscrire
+                    S&apos;inscrire
                   </Link>
                 </p>
               </div>
@@ -298,28 +298,23 @@ export default function Login() {
             </div>
 
             {/* Accès rapide demo */}
-            <div className="mt-6">
-              <button
-                  type="button"
-                  onClick={handleDemoLogin}
-                  className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F26419] transition-colors"
-              >
-                <svg className="h-5 w-5 text-gray-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                </svg>
-                Utiliser le compte de démonstration
-              </button>
-            </div>
-
-            {/* Footer */}
-            <div className="mt-8 text-center">
-              <p className="text-xs text-gray-500">
-                © 2025 STUDAM - Système de gestion des présences
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                Développé par Bioclass Innovators
-              </p>
-            </div>
+            {process.env.NODE_ENV === 'development' && (
+                <div className="mt-6">
+                  <button
+                      type="button"
+                      onClick={handleDemoLogin}
+                      className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F26419] transition-colors"
+                  >
+                    <svg className="h-5 w-5 text-gray-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    Utiliser le compte de démonstration
+                  </button>
+                  <p className="text-xs text-gray-500 text-center mt-2">
+                    Ce bouton n&apos;apparaît qu&apos;en développement
+                  </p>
+                </div>
+            )}
           </div>
         </div>
       </div>

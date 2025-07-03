@@ -1,309 +1,450 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link"; // ✅ Corrige le <a> direct
-const BACKEND_URL = "http://agence-voyage.ddns.net:9026/api";
+import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import authService from '../../services/AuthService';
 
-export default function BackendTestPage() {
-    const [testResults, setTestResults] = useState({});
+export default function Register() {
+    const router = useRouter();
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        password: '',
+        password_confirmation: '',
+        phoneNumber: '',
+        username: '',
+        role: 'ADMIN'
+    });
+    const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
 
-    const generateUniqueId = () =>
-        Date.now().toString(36) + Math.random().toString(36).slice(2);
-
-    const generateTestUser = (role) => {
-        const id = generateUniqueId();
-        const roles = {
-            admin: "Admin Principal",
-            chef_departement: "Chef Département",
-            teacher: "Enseignant",
-        };
-
-        return {
-            nom: `${roles[role]} Test ${id}`,
-            email: `test.${role}.${id}@studam.test`,
-            password: "TestPassword123!",
-            password_confirmation: "TestPassword123!",
-            role: role,
-        };
-    };
-
-    const testConnectivity = async () => {
-        setIsLoading(true);
-        try {
-            const response = await fetch(`${BACKEND_URL}/health`);
-            const result = {
-                success: response.ok,
-                status: response.status,
-                statusText: response.statusText,
-                message: response.ok ? "Backend accessible" : "Backend inaccessible",
-            };
-            setTestResults((prev) => ({ ...prev, connectivity: result }));
-        } catch (error) {
-            const result = {
-                success: false,
-                error: error.message,
-                message: "Impossible de se connecter au backend",
-            };
-            setTestResults((prev) => ({ ...prev, connectivity: result }));
+    useEffect(() => {
+        if (authService.isAuthenticated()) {
+            const redirectPath = authService.getRedirectPath();
+            router.push(redirectPath);
         }
-        setIsLoading(false);
-    };
+    }, [router]);
 
-    const testRegistration = async (userType) => {
-        setIsLoading(true);
-        try {
-            const userData = generateTestUser(userType);
+    const handleChange = (e) => {
+        const { name, value } = e.target;
 
-            const response = await fetch(`${BACKEND_URL}/user/register`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(userData),
-            });
+        setFormData(prevState => ({
+            ...prevState,
+            [name]: value
+        }));
 
-            let data = {};
-            try {
-                data = await response.json();
-            } catch {
-                console.warn("Impossible de parser la réponse JSON");
+        // Générer automatiquement un username basé sur le nom et email
+        if (name === 'name' || name === 'email') {
+            const nameValue = name === 'name' ? value : formData.name;
+            const emailValue = name === 'email' ? value : formData.email;
+
+            if (nameValue && emailValue) {
+                const autoUsername = generateUsername(nameValue, emailValue);
+                setFormData(prev => ({
+                    ...prev,
+                    [name]: value,
+                    username: autoUsername
+                }));
             }
+        }
 
-            const result = {
-                success: response.ok,
-                status: response.status,
-                statusText: response.statusText,
-                data: data,
-                userData: userData,
-                hasToken: !!data.token,
-                hasUser: !!data.user,
-                message: response.ok
-                    ? "Inscription réussie"
-                    : "Erreur d&apos;inscription",
-            };
-
-            setTestResults((prev) => ({
-                ...prev,
-                [`register_${userType}`]: result,
-            }));
-        } catch (error) {
-            const result = {
-                success: false,
-                error: error.message,
-                message: "Erreur lors du test d&apos;inscription",
-            };
-            setTestResults((prev) => ({
-                ...prev,
-                [`register_${userType}`]: result,
+        // Effacer les erreurs lors de la saisie
+        if (errors[name]) {
+            setErrors(prevErrors => ({
+                ...prevErrors,
+                [name]: ''
             }));
         }
-        setIsLoading(false);
-    };
 
-    const testLogin = async (userType) => {
-        setIsLoading(true);
-        try {
-            const registrationResult = testResults[`register_${userType}`];
-            if (!registrationResult?.userData) {
-                throw new Error(
-                    "Aucune inscription trouvée pour ce type d&apos;utilisateur"
-                );
+        if (name === 'password_confirmation' || name === 'password') {
+            if (errors.password_confirmation) {
+                setErrors(prevErrors => ({
+                    ...prevErrors,
+                    password_confirmation: ''
+                }));
             }
+        }
 
-            const credentials = {
-                email: registrationResult.userData.email,
-                password: registrationResult.userData.password,
-            };
-
-            const response = await fetch(`${BACKEND_URL}/user/signin`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(credentials),
-            });
-
-            let data = {};
-            try {
-                data = await response.json();
-            } catch {
-                console.warn("Impossible de parser la réponse JSON");
-            }
-
-            const result = {
-                success: response.ok,
-                status: response.status,
-                statusText: response.statusText,
-                data: data,
-                hasToken: !!data.token,
-                hasUser: !!data.user,
-                message: response.ok
-                    ? "Connexion réussie"
-                    : "Erreur de connexion",
-            };
-
-            setTestResults((prev) => ({
-                ...prev,
-                [`login_${userType}`]: result,
-            }));
-        } catch (error) {
-            const result = {
-                success: false,
-                error: error.message,
-                message: "Erreur lors du test de connexion",
-            };
-            setTestResults((prev) => ({
-                ...prev,
-                [`login_${userType}`]: result,
+        if (errors.general) {
+            setErrors(prevErrors => ({
+                ...prevErrors,
+                general: ''
             }));
         }
-        setIsLoading(false);
     };
 
-    const clearResults = () => {
-        setTestResults({});
-        console.clear();
+    const generateUsername = (name, email) => {
+        const namePart = name.trim().toLowerCase().replace(/\s+/g, '');
+        const emailPart = email.split('@')[0] || '';
+        return (namePart.slice(0, 6) + emailPart.slice(0, 4)).replace(/[^a-z0-9]/g, '');
     };
 
-    const ResultCard = ({ title, result }) => {
-        if (!result) return null;
+    const validateForm = () => {
+        const newErrors = {};
 
-        const isSuccess = result.success;
-        const borderColor = isSuccess
-            ? "border-green-200 bg-green-50"
-            : "border-red-200 bg-red-50";
-        const textColor = isSuccess ? "text-green-800" : "text-red-800";
-        const badgeColor = isSuccess
-            ? "bg-green-100 text-green-800"
-            : "bg-red-100 text-red-800";
+        if (!formData.name.trim()) {
+            newErrors.name = "Le nom complet est requis";
+        } else if (formData.name.trim().length < 2) {
+            newErrors.name = "Le nom doit contenir au moins 2 caractères";
+        }
 
-        return (
-            <div className={`border rounded-lg p-4 ${borderColor}`}>
-                <div className="flex justify-between items-center mb-2">
-                    <h3 className={`font-semibold flex items-center ${textColor}`}>
-                        {isSuccess ? "✅" : "❌"} {title}
-                    </h3>
-                    <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${badgeColor}`}
-                    >
-            {isSuccess ? "SUCCÈS" : "ÉCHEC"}
-          </span>
-                </div>
+        if (!formData.email.trim()) {
+            newErrors.email = "L'adresse email est requise";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            newErrors.email = "L'adresse email n'est pas valide";
+        }
 
-                <div className="text-sm space-y-1">
-                    <p>
-                        <strong>Status HTTP:</strong> {result.status || "N/A"}
-                    </p>
-                    <p>
-                        <strong>Message:</strong> {result.message}
-                    </p>
+        if (!formData.phoneNumber.trim()) {
+            newErrors.phoneNumber = "Le numéro de téléphone est requis";
+        } else if (!/^[\+]?[0-9\s\-\(\)]{8,15}$/.test(formData.phoneNumber.replace(/\s/g, ''))) {
+            newErrors.phoneNumber = "Le numéro de téléphone n'est pas valide";
+        }
 
-                    {result.error && (
-                        <p className="text-red-600">
-                            <strong>Erreur:</strong> {result.error}
-                        </p>
-                    )}
+        if (!formData.username.trim()) {
+            newErrors.username = "Le nom d'utilisateur est requis";
+        } else if (formData.username.length < 3) {
+            newErrors.username = "Le nom d'utilisateur doit contenir au moins 3 caractères";
+        } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+            newErrors.username = "Le nom d'utilisateur ne peut contenir que des lettres, chiffres et tirets bas";
+        }
 
-                    {result.hasToken !== undefined && (
-                        <p>
-                            <strong>Token reçu:</strong> {result.hasToken ? "✅ Oui" : "❌ Non"}
-                        </p>
-                    )}
+        if (!formData.password) {
+            newErrors.password = "Le mot de passe est requis";
+        } else if (formData.password.length < 6) {
+            newErrors.password = "Le mot de passe doit contenir au moins 6 caractères";
+        } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+            newErrors.password = "Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre";
+        }
 
-                    {result.hasUser !== undefined && (
-                        <p>
-                            <strong>Données utilisateur:</strong>{" "}
-                            {result.hasUser ? "✅ Oui" : "❌ Non"}
-                        </p>
-                    )}
+        if (!formData.password_confirmation) {
+            newErrors.password_confirmation = "La confirmation du mot de passe est requise";
+        } else if (formData.password !== formData.password_confirmation) {
+            newErrors.password_confirmation = "Les mots de passe ne correspondent pas";
+        }
 
-                    {result.data && Object.keys(result.data).length > 0 && (
-                        <details className="mt-2">
-                            <summary className="cursor-pointer text-blue-600 hover:text-blue-800 font-medium">
-                                📄 Voir la réponse serveur
-                            </summary>
-                            <pre className="mt-2 p-2 bg-white border rounded text-xs overflow-auto max-h-40">
-                {JSON.stringify(result.data, null, 2)}
-              </pre>
-                        </details>
-                    )}
+        if (!formData.role) {
+            newErrors.role = "Le rôle est requis";
+        }
 
-                    {result.userData && (
-                        <details className="mt-2">
-                            <summary className="cursor-pointer text-blue-600 hover:text-blue-800 font-medium">
-                                👤 Voir les données d&apos;inscription
-                            </summary>
-                            <pre className="mt-2 p-2 bg-white border rounded text-xs overflow-auto">
-                {JSON.stringify(
-                    {
-                        nom: result.userData.nom,
-                        email: result.userData.email,
-                        role: result.userData.role,
-                        password: "***masqué***",
-                    },
-                    null,
-                    2
-                )}
-              </pre>
-                        </details>
-                    )}
-                </div>
-            </div>
-        );
+        return newErrors;
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        const newErrors = validateForm();
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
+
+        setIsLoading(true);
+        setErrors({});
+
+        try {
+            const backendData = {
+                name: formData.name.trim(),
+                email: formData.email.trim().toLowerCase(),
+                password: formData.password,
+                phoneNumber: formData.phoneNumber.trim(),
+                username: formData.username.trim(),
+                role: formData.role
+            };
+
+            const response = await authService.register(backendData);
+
+            if (response.autoLogin) {
+                const redirectPath = authService.getRedirectPath();
+                router.push(redirectPath);
+            } else {
+                router.push('/auth/login?message=inscription-reussie');
+            }
+
+        } catch (error) {
+            setErrors({ general: error.message });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 py-8 px-4">
-            <h1 className="text-2xl font-bold mb-4">🧪 Test Backend STUDAM</h1>
+        <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-md w-full space-y-8">
+                <div className="bg-white rounded-xl shadow-2xl p-8">
+                    {/* Header */}
+                    <div className="text-center mb-8">
+                        <div className="mx-auto h-16 w-16 bg-gradient-to-r from-[#F26419] to-[#FF7A47] rounded-full flex items-center justify-center mb-4">
+                            <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/>
+                            </svg>
+                        </div>
+                        <h1 className="text-3xl font-bold text-[#1B396A]">
+                            Inscription
+                        </h1>
+                        <p className="mt-2 text-sm text-gray-600">
+                            Créez votre compte pour accéder à STUDAM
+                        </p>
+                    </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                <button onClick={testConnectivity} disabled={isLoading} className="bg-blue-600 text-white px-4 py-2 rounded">
-                    🔗 Test Connectivité
-                </button>
-                <button onClick={() => testRegistration("admin")} disabled={isLoading} className="bg-purple-600 text-white px-4 py-2 rounded">
-                    👑 Test Admin
-                </button>
-                <button onClick={() => testRegistration("teacher")} disabled={isLoading} className="bg-green-600 text-white px-4 py-2 rounded">
-                    👨‍🏫 Test Enseignant
-                </button>
-            </div>
+                    {/* Formulaire */}
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Message d'erreur général */}
+                        {errors.general && (
+                            <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                                <div className="flex">
+                                    <div className="flex-shrink-0">
+                                        <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
+                                        </svg>
+                                    </div>
+                                    <div className="ml-3">
+                                        <p className="text-sm text-red-700">{errors.general}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                <ResultCard title="🔗 Connectivité Backend" result={testResults.connectivity} />
-                <ResultCard title="👑 Inscription Admin" result={testResults.register_admin} />
-                <ResultCard title="👨‍🏫 Inscription Enseignant" result={testResults.register_teacher} />
-                <ResultCard title="🔐 Connexion Admin" result={testResults.login_admin} />
-                <ResultCard title="🔐 Connexion Enseignant" result={testResults.login_teacher} />
-            </div>
+                        <div className="space-y-4">
+                            {/* Nom complet */}
+                            <div>
+                                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Nom complet *
+                                </label>
+                                <input
+                                    id="name"
+                                    name="name"
+                                    type="text"
+                                    autoComplete="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    className={`appearance-none relative block w-full px-3 py-3 border ${errors.name ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
+                                    placeholder="Entrez votre nom complet"
+                                />
+                                {errors.name && (
+                                    <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                                )}
+                            </div>
 
-            <div className="flex gap-4">
-                <button onClick={clearResults} className="bg-gray-600 text-white px-4 py-2 rounded">
-                    🗑️ Effacer
-                </button>
-                {testResults.register_admin && (
-                    <button onClick={() => testLogin("admin")} disabled={isLoading} className="bg-purple-100 text-purple-800 px-4 py-2 rounded">
-                        🔐 Connexion Admin
-                    </button>
-                )}
-                {testResults.register_teacher && (
-                    <button onClick={() => testLogin("teacher")} disabled={isLoading} className="bg-green-100 text-green-800 px-4 py-2 rounded">
-                        🔐 Connexion Enseignant
-                    </button>
-                )}
-            </div>
+                            {/* Email */}
+                            <div>
+                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Adresse email *
+                                </label>
+                                <input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    autoComplete="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    className={`appearance-none relative block w-full px-3 py-3 border ${errors.email ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
+                                    placeholder="Entrez votre adresse email"
+                                />
+                                {errors.email && (
+                                    <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                                )}
+                            </div>
 
-            <div className="mt-12">
-                <h2 className="text-xl font-semibold mb-4">🌐 Navigation rapide</h2>
-                <div className="flex gap-4 flex-wrap">
-                    <Link href="/auth/login">
-                        <span className="bg-blue-600 text-white px-4 py-2 rounded cursor-pointer">🔐 Connexion</span>
-                    </Link>
-                    <Link href="/auth/register">
-                        <span className="bg-green-600 text-white px-4 py-2 rounded cursor-pointer">📝 Inscription</span>
-                    </Link>
-                    <Link href="/dashboard">
-                        <span className="bg-purple-600 text-white px-4 py-2 rounded cursor-pointer">🏠 Dashboard</span>
-                    </Link>
-                    <Link href="/">
-                        <span className="bg-gray-600 text-white px-4 py-2 rounded cursor-pointer">🏡 Accueil</span>
-                    </Link>
+                            {/* Numéro de téléphone */}
+                            <div>
+                                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Numéro de téléphone *
+                                </label>
+                                <input
+                                    id="phoneNumber"
+                                    name="phoneNumber"
+                                    type="tel"
+                                    autoComplete="tel"
+                                    value={formData.phoneNumber}
+                                    onChange={handleChange}
+                                    className={`appearance-none relative block w-full px-3 py-3 border ${errors.phoneNumber ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
+                                    placeholder="+221 77 123 45 67"
+                                />
+                                {errors.phoneNumber && (
+                                    <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>
+                                )}
+                            </div>
+
+                            {/* Nom d'utilisateur */}
+                            <div>
+                                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Nom d&apos; utilisateur *
+                                </label>
+                                <input
+                                    id="username"
+                                    name="username"
+                                    type="text"
+                                    autoComplete="username"
+                                    value={formData.username}
+                                    onChange={handleChange}
+                                    className={`appearance-none relative block w-full px-3 py-3 border ${errors.username ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
+                                    placeholder="Nom d'utilisateur unique"
+                                />
+                                {errors.username && (
+                                    <p className="mt-1 text-sm text-red-600">{errors.username}</p>
+                                )}
+                                <p className="mt-1 text-xs text-gray-500">
+                                    Généré automatiquement ou personnalisable
+                                </p>
+                            </div>
+
+                            {/* Rôle */}
+                            <div>
+                                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Rôle *
+                                </label>
+                                <select
+                                    id="role"
+                                    name="role"
+                                    value={formData.role}
+                                    onChange={handleChange}
+                                    className={`appearance-none relative block w-full px-3 py-3 border ${errors.role ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
+                                >
+                                    <option value="">Sélectionnez votre rôle</option>
+                                    <option value="ADMIN">Administrateur</option>
+                                    <option value="TEACHER">Enseignant</option>
+                                    <option value="CHEF_DEPARTMENT">Chef de département</option>
+                                </select>
+                                {errors.role && (
+                                    <p className="mt-1 text-sm text-red-600">{errors.role}</p>
+                                )}
+                            </div>
+
+                            {/* Mot de passe */}
+                            <div>
+                                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Mot de passe *
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        id="password"
+                                        name="password"
+                                        type={showPassword ? "text" : "password"}
+                                        autoComplete="new-password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        className={`appearance-none relative block w-full px-3 py-3 pr-10 border ${errors.password ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
+                                        placeholder="Entrez votre mot de passe"
+                                    />
+                                    <button
+                                        type="button"
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                    >
+                                        {showPassword ? (
+                                            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/>
+                                            </svg>
+                                        ) : (
+                                            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
+                                {errors.password && (
+                                    <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                                )}
+                                <p className="mt-1 text-xs text-gray-500">
+                                    Minimum 6 caractères avec majuscule, minuscule et chiffre
+                                </p>
+                            </div>
+
+                            {/* Confirmation du mot de passe */}
+                            <div>
+                                <label htmlFor="password_confirmation" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Confirmer le mot de passe *
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        id="password_confirmation"
+                                        name="password_confirmation"
+                                        type={showPasswordConfirm ? "text" : "password"}
+                                        autoComplete="new-password"
+                                        value={formData.password_confirmation}
+                                        onChange={handleChange}
+                                        className={`appearance-none relative block w-full px-3 py-3 pr-10 border ${errors.password_confirmation ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
+                                        placeholder="Confirmez votre mot de passe"
+                                    />
+                                    <button
+                                        type="button"
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                        onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
+                                    >
+                                        {showPasswordConfirm ? (
+                                            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/>
+                                            </svg>
+                                        ) : (
+                                            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
+                                {errors.password_confirmation && (
+                                    <p className="mt-1 text-sm text-red-600">{errors.password_confirmation}</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Conditions d'utilisation */}
+                        <div className="flex items-center">
+                            <input
+                                id="terms"
+                                name="terms"
+                                type="checkbox"
+                                className="h-4 w-4 text-[#F26419] focus:ring-[#F26419] border-gray-300 rounded"
+                                required
+                            />
+                            <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
+                                J&apos;accepte les{' '}
+                                <Link href="/terms" className="text-[#F26419] hover:text-[#E55A1A] underline">
+                                    conditions d&apos;utilisation
+                                </Link>
+                                {' '}et la{' '}
+                                <Link href="/privacy" className="text-[#F26419] hover:text-[#E55A1A] underline">
+                                    politique de confidentialité
+                                </Link>
+                            </label>
+                        </div>
+
+                        {/* Bouton d'inscription */}
+                        <div>
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-[#F26419] to-[#FF7A47] hover:from-[#E55A1A] hover:to-[#F26419] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F26419] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02]"
+                            >
+                                {isLoading ? (
+                                    <div className="flex items-center">
+                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Inscription en cours...
+                                    </div>
+                                ) : (
+                                    'Créer mon compte'
+                                )}
+                            </button>
+                        </div>
+
+                        {/* Lien de connexion */}
+                        <div className="text-center">
+                            <p className="text-sm text-gray-600">
+                                Vous avez déjà un compte ?{' '}
+                                <Link href="/auth/login" className="font-medium text-[#F26419] hover:text-[#E55A1A] underline">
+                                    Se connecter
+                                </Link>
+                            </p>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

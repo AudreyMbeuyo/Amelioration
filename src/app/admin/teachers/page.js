@@ -3,13 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import TeachersList from '@/components/teachers/TeachersList';
-import TeacherModal from '@/components/teachers/TeacherModal';
-import TeachersFilter from '@/components/teachers/TeachersFilter';
 
 export default function TeachersPage() {
   const router = useRouter();
-  
+
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [teachers, setTeachers] = useState([]);
@@ -22,323 +19,556 @@ export default function TeachersPage() {
   });
   const [showModal, setShowModal] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Configuration backend
+  const BACKEND_URL = 'http://agence-voyage.ddns.net:9026/api';
 
   useEffect(() => {
     // Vérifier si l'utilisateur est connecté et a les droits d'admin
     if (typeof window !== 'undefined') {
       const userStr = localStorage.getItem('user');
       if (!userStr) {
+        console.log('[TEACHERS] Utilisateur non connecté, redirection...');
         router.push('/auth/login');
         return;
       }
-      
+
       try {
         const currentUser = JSON.parse(userStr);
+        console.log('👤 [TEACHERS] Utilisateur connecté:', currentUser);
         setUser(currentUser);
-        
+
         // Vérifier si l'utilisateur a les droits d'admin
         if (currentUser.role !== 'admin' && currentUser.role !== 'super_admin' && currentUser.role !== 'chef_departement') {
-          // Rediriger vers le dashboard pour les utilisateurs non autorisés
+          console.log('[TEACHERS] Droits insuffisants, redirection vers dashboard');
           router.push('/dashboard');
           return;
         }
-        
-        // Charger les données
-        loadTeachers();
-        loadDepartments();
-        loadSubjects();
+
+        // Charger les données depuis le backend
+        loadAllData();
       } catch (error) {
-        console.error('Erreur lors de la récupération des données utilisateur:', error);
+        console.error('[TEACHERS] Erreur parsing utilisateur:', error);
         router.push('/auth/login');
         return;
       }
     }
   }, [router]);
 
-  const loadTeachers = () => {
+  // Fonction principale pour charger toutes les données
+  const loadAllData = async () => {
+    console.log('[TEACHERS] Chargement de toutes les données...');
     setLoading(true);
-    
-    // Données fictives pour la démo
-    setTimeout(() => {
-      const mockTeachers = [
-        { 
-          id: 1, 
-          nom: 'Dr. Amadou Diallo', 
-          email: 'a.diallo@studam.edu', 
-          phone: '(+221) 77 123 45 67', 
-          departement: { id: 1, nom: 'Informatique' },
-          matieres: [
-            { id: 1, libelle: 'Programmation Web', code: 'INFO301' },
-            { id: 3, libelle: 'Réseaux', code: 'INFO305' }
-          ],
-          isChefDepartement: true,
-          status: 'active'
-        },
-        { 
-          id: 2, 
-          nom: 'Prof. Fatou Fall', 
-          email: 'f.fall@studam.edu', 
-          phone: '(+221) 77 234 56 78', 
-          departement: { id: 1, nom: 'Informatique' },
-          matieres: [
-            { id: 2, libelle: 'Systèmes d\'exploitation', code: 'INFO204' }
-          ],
-          isChefDepartement: false,
-          status: 'active'
-        },
-        { 
-          id: 3, 
-          nom: 'Dr. Modou Sow', 
-          email: 'm.sow@studam.edu', 
-          phone: '(+221) 77 345 67 89', 
-          departement: { id: 2, nom: 'Mathématiques' },
-          matieres: [
-            { id: 6, libelle: 'Algèbre linéaire', code: 'MATH201' },
-            { id: 7, libelle: 'Analyse numérique', code: 'MATH302' }
-          ],
-          isChefDepartement: true,
-          status: 'active'
-        },
-        { 
-          id: 4, 
-          nom: 'Prof. Aissatou Ndiaye', 
-          email: 'a.ndiaye@studam.edu', 
-          phone: '(+221) 77 456 78 90', 
-          departement: { id: 3, nom: 'Génie Civil' },
-          matieres: [
-            { id: 10, libelle: 'Structures en béton', code: 'GC301' }
-          ],
-          isChefDepartement: false,
-          status: 'active'
-        },
-        { 
-          id: 5, 
-          nom: 'Dr. Oumar Faye', 
-          email: 'o.faye@studam.edu', 
-          phone: '(+221) 77 567 89 01', 
-          departement: { id: 2, nom: 'Mathématiques' },
-          matieres: [
-            { id: 8, libelle: 'Statistiques', code: 'MATH401' }
-          ],
-          isChefDepartement: false,
-          status: 'inactive'
-        }
-      ];
-      
-      setTeachers(mockTeachers);
+    setError('');
+
+    try {
+      // Charger en parallèle pour optimiser les performances
+      await Promise.all([
+        loadTeachers(),
+        loadDepartments(),
+        loadSubjects()
+      ]);
+    } catch (error) {
+      console.error('[TEACHERS] Erreur chargement données:', error);
+      setError('Erreur lors du chargement des données');
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
-  const loadDepartments = () => {
-    // Données fictives pour la démo
-    const mockDepartments = [
-      { id: 1, nom: 'Informatique' },
-      { id: 2, nom: 'Mathématiques' },
-      { id: 3, nom: 'Génie Civil' },
-      { id: 4, nom: 'Génie Électrique' },
-      { id: 5, nom: 'Gestion' }
-    ];
-    
-    setDepartments(mockDepartments);
+  // Charger les enseignants depuis le backend
+  const loadTeachers = async () => {
+    console.log('🔄 [TEACHERS] Chargement enseignants depuis le backend...');
+
+    try {
+      const token = localStorage.getItem('authToken');
+      console.log('[TEACHERS] Token utilisé:', token ? 'Présent' : 'Absent');
+
+      const response = await fetch(`${BACKEND_URL}/teachers`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      console.log('📡 [TEACHERS] Réponse du serveur:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.log('[TEACHERS] Token expiré, redirection vers login');
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('user');
+          router.push('/auth/login');
+          return;
+        }
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ [TEACHERS] Données enseignants reçues:', data);
+
+      // Adapter selon la structure de réponse du backend
+      const teachersData = data.teachers || data.data || data || [];
+      setTeachers(Array.isArray(teachersData) ? teachersData : []);
+
+      console.log(`✅ [TEACHERS] ${teachersData.length} enseignants chargés`);
+
+    } catch (error) {
+      console.error('❌ [TEACHERS] Erreur chargement enseignants:', error);
+
+      // En cas d'erreur, utiliser des données vides mais afficher un message informatif
+      setTeachers([]);
+      setError(`Impossible de charger les enseignants: ${error.message}`);
+
+      // Optionnel: proposer de réessayer
+      setTimeout(() => {
+        if (window.confirm('Erreur de chargement. Voulez-vous réessayer?')) {
+          loadTeachers();
+        }
+      }, 2000);
+    }
   };
 
-  const loadSubjects = () => {
-    // Données fictives pour la démo
-    const mockSubjects = [
-      { id: 1, libelle: 'Programmation Web', code: 'INFO301', departement: { id: 1, nom: 'Informatique' } },
-      { id: 2, libelle: 'Systèmes d\'exploitation', code: 'INFO204', departement: { id: 1, nom: 'Informatique' } },
-      { id: 3, libelle: 'Réseaux', code: 'INFO305', departement: { id: 1, nom: 'Informatique' } },
-      { id: 4, libelle: 'Bases de données', code: 'INFO202', departement: { id: 1, nom: 'Informatique' } },
-      { id: 5, libelle: 'Intelligence Artificielle', code: 'INFO401', departement: { id: 1, nom: 'Informatique' } },
-      { id: 6, libelle: 'Algèbre linéaire', code: 'MATH201', departement: { id: 2, nom: 'Mathématiques' } },
-      { id: 7, libelle: 'Analyse numérique', code: 'MATH302', departement: { id: 2, nom: 'Mathématiques' } },
-      { id: 8, libelle: 'Statistiques', code: 'MATH401', departement: { id: 2, nom: 'Mathématiques' } },
-      { id: 9, libelle: 'Mécanique des sols', code: 'GC201', departement: { id: 3, nom: 'Génie Civil' } },
-      { id: 10, libelle: 'Structures en béton', code: 'GC301', departement: { id: 3, nom: 'Génie Civil' } }
-    ];
-    
-    setSubjects(mockSubjects);
+  // Charger les départements depuis le backend
+  const loadDepartments = async () => {
+    console.log('[TEACHERS] Chargement départements...');
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`${BACKEND_URL}/departments`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const deptData = data.departments || data.data || data || [];
+        setDepartments(Array.isArray(deptData) ? deptData : []);
+        console.log(`[TEACHERS] ${deptData.length} départements chargés`);
+      } else {
+        console.log('[TEACHERS] Départements non disponibles');
+        setDepartments([]);
+      }
+    } catch (error) {
+      console.error('[TEACHERS] Erreur chargement départements:', error);
+      setDepartments([]);
+    }
   };
 
-  const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
+  // Charger les matières depuis le backend
+  const loadSubjects = async () => {
+    console.log('[TEACHERS] Chargement matières...');
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`${BACKEND_URL}/subjects`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const subjectsData = data.subjects || data.data || data || [];
+        setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
+        console.log(`[TEACHERS] ${subjectsData.length} matières chargées`);
+      } else {
+        console.log('[TEACHERS] Matières non disponibles');
+        setSubjects([]);
+      }
+    } catch (error) {
+      console.error('[TEACHERS] Erreur chargement matières:', error);
+      setSubjects([]);
+    }
   };
 
+  // Filtrer les enseignants selon les critères
   const filteredTeachers = teachers.filter(teacher => {
-    // Filtrer par recherche de texte
-    if (filters.search && !teacher.nom.toLowerCase().includes(filters.search.toLowerCase()) && 
-        !teacher.email.toLowerCase().includes(filters.search.toLowerCase())) {
-      return false;
-    }
-    
-    // Filtrer par département
-    if (filters.department && teacher.departement.id !== parseInt(filters.department)) {
-      return false;
-    }
-    
-    // Filtrer par matière
-    if (filters.subject && !teacher.matieres.some(m => m.id === parseInt(filters.subject))) {
-      return false;
-    }
-    
-    return true;
+    const matchesSearch = !filters.search ||
+        teacher.nom?.toLowerCase().includes(filters.search.toLowerCase()) ||
+        teacher.email?.toLowerCase().includes(filters.search.toLowerCase());
+
+    const matchesDepartment = !filters.department ||
+        teacher.departement?.id?.toString() === filters.department;
+
+    const matchesSubject = !filters.subject ||
+        teacher.matieres?.some(matiere => matiere.id?.toString() === filters.subject);
+
+    return matchesSearch && matchesDepartment && matchesSubject;
   });
 
-  const handleAddTeacher = () => {
-    setSelectedTeacher(null);
-    setShowModal(true);
-  };
+  // Gérer la création/modification d'un enseignant
+  const handleSaveTeacher = async (teacherData) => {
+    console.log('[TEACHERS] Sauvegarde enseignant:', teacherData);
 
-  const handleEditTeacher = (teacher) => {
-    setSelectedTeacher(teacher);
-    setShowModal(true);
-  };
+    try {
+      const token = localStorage.getItem('authToken');
+      const isEdit = !!selectedTeacher;
+      const url = isEdit
+          ? `${BACKEND_URL}/teachers/${selectedTeacher.id}`
+          : `${BACKEND_URL}/teachers`;
 
-  const handleSaveTeacher = (teacherData) => {
-    if (teacherData.id) {
-      // Mise à jour d'un enseignant existant
-      setTeachers(prev => 
-        prev.map(item => 
-          item.id === teacherData.id ? { ...item, ...teacherData } : item
-        )
-      );
-    } else {
-      // Ajout d'un nouvel enseignant
-      const newTeacher = {
-        ...teacherData,
-        id: teachers.length + 1,
-        status: 'active'
-      };
-      
-      setTeachers(prev => [...prev, newTeacher]);
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(teacherData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ [TEACHERS] Enseignant sauvegardé:', result);
+
+      setSuccessMessage(isEdit ? 'Enseignant modifié avec succès' : 'Enseignant créé avec succès');
+      setShowModal(false);
+      setSelectedTeacher(null);
+
+      // Recharger la liste
+      loadTeachers();
+
+    } catch (error) {
+      console.error('[TEACHERS] Erreur sauvegarde:', error);
+      setError(`Erreur lors de la sauvegarde: ${error.message}`);
     }
-    
-    setShowModal(false);
-    setSelectedTeacher(null);
   };
 
-  const handleToggleStatus = (teacherId) => {
-    setTeachers(prev => 
-      prev.map(teacher => 
-        teacher.id === teacherId 
-          ? { ...teacher, status: teacher.status === 'active' ? 'inactive' : 'active' } 
-          : teacher
-      )
-    );
+  // Version simplifiée pour test (évite l'erreur ESLint)
+  const handleSaveTeacherDemo = () => {
+    console.log('💾 [TEACHERS] Demo sauvegarde - à remplacer par le vrai formulaire');
+    // Pour l'instant, on simule une sauvegarde
+    const demoData = {
+      nom: 'Test Enseignant',
+      email: 'test@studam.edu',
+      role: 'teacher'
+    };
+    handleSaveTeacher(demoData);
   };
 
-  const handleToggleChefDepartement = (teacherId) => {
-    // Si on active un chef de département, il faut désactiver tous les autres dans le même département
-    const teacher = teachers.find(t => t.id === teacherId);
-    if (!teacher) return;
-    
-    const departmentId = teacher.departement.id;
-    
-    setTeachers(prev => 
-      prev.map(t => {
-        if (t.id === teacherId) {
-          return { ...t, isChefDepartement: !t.isChefDepartement };
-        } else if (t.departement.id === departmentId && !teacher.isChefDepartement) {
-          return { ...t, isChefDepartement: false };
+  // Gérer la suppression d'un enseignant
+  const handleDeleteTeacher = async (teacherId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet enseignant?')) {
+      return;
+    }
+
+    console.log('🗑️ [TEACHERS] Suppression enseignant:', teacherId);
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`${BACKEND_URL}/teachers/${teacherId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-        return t;
-      })
-    );
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur ${response.status}`);
+      }
+
+      console.log('✅ [TEACHERS] Enseignant supprimé');
+      setSuccessMessage('Enseignant supprimé avec succès');
+
+      // Recharger la liste
+      loadTeachers();
+
+    } catch (error) {
+      console.error('[TEACHERS] Erreur suppression:', error);
+      setError(`Erreur lors de la suppression: ${error.message}`);
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#F26419]"></div>
+  // Composant de filtres
+  const TeachersFilter = () => (
+      <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <h3 className="text-lg font-medium mb-4">Filtres</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Rechercher
+            </label>
+            <input
+                type="text"
+                placeholder="Nom ou email..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                value={filters.search}
+                onChange={(e) => setFilters({...filters, search: e.target.value})}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Département
+            </label>
+            <select
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                value={filters.department}
+                onChange={(e) => setFilters({...filters, department: e.target.value})}
+            >
+              <option value="">Tous les départements</option>
+              {departments.map(dept => (
+                  <option key={dept.id} value={dept.id}>
+                    {dept.nom}
+                  </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Matière
+            </label>
+            <select
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                value={filters.subject}
+                onChange={(e) => setFilters({...filters, subject: e.target.value})}
+            >
+              <option value="">Toutes les matières</option>
+              {subjects.map(subject => (
+                  <option key={subject.id} value={subject.id}>
+                    {subject.libelle}
+                  </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
+  );
+
+  // Composant de liste des enseignants
+  const TeachersList = () => (
+      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+        <ul className="divide-y divide-gray-200">
+          {filteredTeachers.length === 0 ? (
+              <li className="px-6 py-8 text-center text-gray-500">
+                {loading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <span className="ml-2">Chargement des enseignants...</span>
+                    </div>
+                ) : error ? (
+                    <div className="text-red-600">
+                      <p>{error}</p>
+                      <button
+                          onClick={loadTeachers}
+                          className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      >
+                        Réessayer
+                      </button>
+                    </div>
+                ) : (
+                    'Aucun enseignant trouvé'
+                )}
+              </li>
+          ) : (
+              filteredTeachers.map((teacher) => (
+                  <li key={teacher.id}>
+                    <div className="px-6 py-4 flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
+                              {teacher.nom?.charAt(0)?.toUpperCase() || 'T'}
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {teacher.nom || 'Nom non renseigné'}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {teacher.email || 'Email non renseigné'}
+                            </div>
+                            {teacher.departement && (
+                                <div className="text-xs text-blue-600">
+                                  {teacher.departement.nom}
+                                </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <button
+                            onClick={() => {
+                              setSelectedTeacher(teacher);
+                              setShowModal(true);
+                            }}
+                            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                        >
+                          Modifier
+                        </button>
+                        <button
+                            onClick={() => handleDeleteTeacher(teacher.id)}
+                            className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                    </div>
+                  </li>
+              ))
+          )}
+        </ul>
+      </div>
+  );
+
+  // Composant modal simplifié (à remplacer par le vrai composant)
+  const TeacherModal = () => (
+      showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg w-96">
+              <h3 className="text-lg font-medium mb-4">
+                {selectedTeacher ? 'Modifier l\'enseignant' : 'Nouvel enseignant'}
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Cette fonctionnalité sera implémentée avec le composant TeacherModal complet.
+              </p>
+              <div className="flex justify-end space-x-2">
+                <button
+                    onClick={() => {
+                      setShowModal(false);
+                      setSelectedTeacher(null);
+                    }}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                >
+                  Annuler
+                </button>
+                <button
+                    onClick={handleSaveTeacherDemo}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Test Sauvegarde
+                </button>
+              </div>
+            </div>
+          </div>
+      )
+  );
+
+  if (loading && teachers.length === 0) {
+    return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Chargement des données...</p>
+          </div>
+        </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-[#1B396A]">Gestion des Enseignants</h1>
-          <nav className="flex" aria-label="Breadcrumb">
-            <ol className="inline-flex items-center space-x-1 md:space-x-3">
-              <li className="inline-flex items-center">
-                <Link href="/dashboard" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-[#F26419]">
-                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
-                  </svg>
-                  Tableau de bord
-                </Link>
-              </li>
-              <li aria-current="page">
-                <div className="flex items-center">
-                  <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"></path>
-                  </svg>
-                  <span className="ml-1 text-sm font-medium text-gray-500 md:ml-2">Enseignants</span>
-                </div>
-              </li>
-            </ol>
-          </nav>
-        </div>
+      <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          {/* En-tête */}
+          <div className="mb-8">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Gestion des Enseignants
+                </h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  {filteredTeachers.length} enseignant{filteredTeachers.length > 1 ? 's' : ''} trouvé{filteredTeachers.length > 1 ? 's' : ''}
+                </p>
+              </div>
 
-        {/* Filtres et bouton d'ajout */}
-        <div className="mb-6 flex flex-col sm:flex-row justify-between gap-4">
-          <TeachersFilter 
-            departments={departments}
-            subjects={subjects}
-            filters={filters}
-            onFilterChange={handleFilterChange}
-          />
-          
-          <div className="sm:ml-4">
+              <div className="flex space-x-3">
+                <Link
+                    href="/dashboard"
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  ← Retour
+                </Link>
+                <button
+                    onClick={() => {
+                      setSelectedTeacher(null);
+                      setShowModal(true);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+                >
+                  + Nouvel Enseignant
+                </button>
+                <button
+                    onClick={loadAllData}
+                    disabled={loading}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-50"
+                >
+                  🔄 Actualiser
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Messages */}
+          {successMessage && (
+              <div className="mb-4 bg-green-50 border border-green-200 rounded-md p-4">
+                <div className="text-green-800">{successMessage}</div>
+                <button
+                    onClick={() => setSuccessMessage('')}
+                    className="mt-2 text-green-600 text-sm underline"
+                >
+                  Fermer
+                </button>
+              </div>
+          )}
+
+          {error && (
+              <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4">
+                <div className="text-red-800">{error}</div>
+                <button
+                    onClick={() => setError('')}
+                    className="mt-2 text-red-600 text-sm underline"
+                >
+                  Fermer
+                </button>
+              </div>
+          )}
+
+          {/* Filtres */}
+          <TeachersFilter />
+
+          {/* Liste des enseignants */}
+          <TeachersList />
+
+          {/* Modal */}
+          <TeacherModal />
+
+          {/* Informations de debug (à retirer en production) */}
+          <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-md p-4">
+            <h4 className="text-yellow-800 font-medium">🔧 Informations de debug</h4>
+            <div className="text-yellow-700 text-sm mt-2 space-y-1">
+              <p><strong>Backend URL:</strong> {BACKEND_URL}</p>
+              <p><strong>Token présent:</strong> {localStorage.getItem('authToken') ? 'Oui' : 'Non'}</p>
+              <p><strong>Enseignants chargés:</strong> {teachers.length}</p>
+              <p><strong>Départements:</strong> {departments.length}</p>
+              <p><strong>Matières:</strong> {subjects.length}</p>
+              <p><strong>Filtres actifs:</strong> {Object.values(filters).filter(Boolean).length}</p>
+            </div>
             <button
-              type="button"
-              onClick={handleAddTeacher}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#F26419] hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F26419]"
+                onClick={() => console.log('[DEBUG] État complet:', { teachers, departments, subjects, filters, user })}
+                className="mt-2 px-3 py-1 bg-yellow-200 text-yellow-800 rounded text-sm"
             >
-              <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-              </svg>
-              Ajouter un enseignant
+              Log état dans console
             </button>
           </div>
         </div>
-
-        {/* Liste des enseignants */}
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-            <h3 className="text-lg leading-6 font-medium text-[#1B396A]">
-              Liste des Enseignants
-            </h3>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500">
-              {filteredTeachers.length} enseignant(s) trouvé(s)
-            </p>
-          </div>
-          
-          <TeachersList 
-            teachers={filteredTeachers}
-            onEdit={handleEditTeacher}
-            onToggleStatus={handleToggleStatus}
-            onToggleChefDepartement={handleToggleChefDepartement}
-          />
-        </div>
       </div>
-
-      {/* Modal pour ajouter/modifier un enseignant */}
-      {showModal && (
-        <TeacherModal 
-          show={showModal}
-          teacher={selectedTeacher}
-          departments={departments}
-          subjects={subjects}
-          onClose={() => {
-            setShowModal(false);
-            setSelectedTeacher(null);
-          }}
-          onSave={handleSaveTeacher}
-        />
-      )}
-    </div>
   );
 }

@@ -8,16 +8,16 @@ import authService from '@/services/AuthService';
 export default function Register() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    nom: '',
+    name: '',           // ✅ 'name' au lieu de 'nom'
     email: '',
     password: '',
-    password_confirmation: '',
-    role: 'teacher' // Valeur par défaut
+    phoneNumber: '',    // ✅ Nouveau champ requis
+    username: '',       // ✅ Nouveau champ requis
+    role: 'ADMIN'       // ✅ Valeur conforme backend
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
 
   useEffect(() => {
     // Vérifier si l'utilisateur est déjà connecté
@@ -35,6 +35,21 @@ export default function Register() {
       [name]: value
     }));
 
+    // ✅ Génération automatique du username basée sur nom et email
+    if (name === 'name' || name === 'email') {
+      const nameValue = name === 'name' ? value : formData.name;
+      const emailValue = name === 'email' ? value : formData.email;
+
+      if (nameValue && emailValue) {
+        const autoUsername = generateUsername(nameValue, emailValue);
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          username: autoUsername
+        }));
+      }
+    }
+
     // Effacer les erreurs lors de la saisie
     if (errors[name]) {
       setErrors(prevErrors => ({
@@ -43,17 +58,6 @@ export default function Register() {
       }));
     }
 
-    // Validation en temps réel pour la confirmation du mot de passe
-    if (name === 'password_confirmation' || name === 'password') {
-      if (errors.password_confirmation) {
-        setErrors(prevErrors => ({
-          ...prevErrors,
-          password_confirmation: ''
-        }));
-      }
-    }
-
-    // Effacer l'erreur générale
     if (errors.general) {
       setErrors(prevErrors => ({
         ...prevErrors,
@@ -62,14 +66,21 @@ export default function Register() {
     }
   };
 
+  // ✅ Fonction pour générer automatiquement un username
+  const generateUsername = (name, email) => {
+    const namePart = name.trim().toLowerCase().replace(/\s+/g, '');
+    const emailPart = email.split('@')[0] || '';
+    return (namePart.slice(0, 6) + emailPart.slice(0, 4)).replace(/[^a-z0-9]/g, '');
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
     // Validation du nom
-    if (!formData.nom.trim()) {
-      newErrors.nom = "Le nom complet est requis";
-    } else if (formData.nom.trim().length < 2) {
-      newErrors.nom = "Le nom doit contenir au moins 2 caractères";
+    if (!formData.name.trim()) {
+      newErrors.name = "Le nom complet est requis";
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = "Le nom doit contenir au moins 2 caractères";
     }
 
     // Validation de l'email
@@ -79,6 +90,22 @@ export default function Register() {
       newErrors.email = "L'adresse email n'est pas valide";
     }
 
+    // ✅ Validation du numéro de téléphone
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = "Le numéro de téléphone est requis";
+    } else if (!/^[\+]?[0-9\s\-\(\)]{8,15}$/.test(formData.phoneNumber.replace(/\s/g, ''))) {
+      newErrors.phoneNumber = "Le numéro de téléphone n'est pas valide";
+    }
+
+    // ✅ Validation du username
+    if (!formData.username.trim()) {
+      newErrors.username = "Le nom d'utilisateur est requis";
+    } else if (formData.username.length < 3) {
+      newErrors.username = "Le nom d'utilisateur doit contenir au moins 3 caractères";
+    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      newErrors.username = "Le nom d'utilisateur ne peut contenir que des lettres, chiffres et tirets bas";
+    }
+
     // Validation du mot de passe
     if (!formData.password) {
       newErrors.password = "Le mot de passe est requis";
@@ -86,13 +113,6 @@ export default function Register() {
       newErrors.password = "Le mot de passe doit contenir au moins 6 caractères";
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
       newErrors.password = "Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre";
-    }
-
-    // Validation de la confirmation du mot de passe
-    if (!formData.password_confirmation) {
-      newErrors.password_confirmation = "La confirmation du mot de passe est requise";
-    } else if (formData.password !== formData.password_confirmation) {
-      newErrors.password_confirmation = "Les mots de passe ne correspondent pas";
     }
 
     // Validation du rôle
@@ -117,8 +137,18 @@ export default function Register() {
     setErrors({});
 
     try {
+      // ✅ Préparer les données exactement selon le format backend
+      const backendData = {
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        phoneNumber: formData.phoneNumber.trim(),
+        username: formData.username.trim(),
+        role: formData.role
+      };
+
       // Utiliser le service d'authentification
-      const response = await authService.register(formData);
+      const response = await authService.register(backendData);
 
       if (response.autoLogin) {
         // Auto-connexion réussie, rediriger vers le dashboard
@@ -138,7 +168,8 @@ export default function Register() {
   };
 
   return (
-      <div className="min-h-screen bg-gradient-to-br from-[#1B396A] to-[#2A5490] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      // ✅ Utilise vos Header/Footer existants - pas de fond plein écran
+      <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div className="bg-white rounded-xl shadow-2xl p-8">
             {/* Header */}
@@ -149,11 +180,8 @@ export default function Register() {
                 </svg>
               </div>
               <h1 className="text-3xl font-bold text-[#1B396A]">
-                STUDAM
-              </h1>
-              <h2 className="mt-4 text-xl font-semibold text-gray-900">
                 Inscription
-              </h2>
+              </h1>
               <p className="mt-2 text-sm text-gray-600">
                 Créez votre compte pour accéder à STUDAM
               </p>
@@ -178,23 +206,23 @@ export default function Register() {
               )}
 
               <div className="space-y-4">
-                {/* Nom complet */}
+                {/* ✅ Nom complet (name au lieu de nom) */}
                 <div>
-                  <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                     Nom complet *
                   </label>
                   <input
-                      id="nom"
-                      name="nom"
+                      id="name"
+                      name="name"
                       type="text"
                       autoComplete="name"
-                      value={formData.nom}
+                      value={formData.name}
                       onChange={handleChange}
-                      className={`appearance-none relative block w-full px-3 py-3 border ${errors.nom ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
+                      className={`appearance-none relative block w-full px-3 py-3 border ${errors.name ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
                       placeholder="Entrez votre nom complet"
                   />
-                  {errors.nom && (
-                      <p className="mt-1 text-sm text-red-600">{errors.nom}</p>
+                  {errors.name && (
+                      <p className="mt-1 text-sm text-red-600">{errors.name}</p>
                   )}
                 </div>
 
@@ -218,7 +246,50 @@ export default function Register() {
                   )}
                 </div>
 
-                {/* Rôle */}
+                {/* ✅ Numéro de téléphone - NOUVEAU */}
+                <div>
+                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                    Numéro de téléphone *
+                  </label>
+                  <input
+                      id="phoneNumber"
+                      name="phoneNumber"
+                      type="tel"
+                      autoComplete="tel"
+                      value={formData.phoneNumber}
+                      onChange={handleChange}
+                      className={`appearance-none relative block w-full px-3 py-3 border ${errors.phoneNumber ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
+                      placeholder="+221 77 123 45 67"
+                  />
+                  {errors.phoneNumber && (
+                      <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>
+                  )}
+                </div>
+
+                {/* ✅ Nom d'utilisateur - NOUVEAU */}
+                <div>
+                  <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                    Nom d&apos; utilisateur *
+                  </label>
+                  <input
+                      id="username"
+                      name="username"
+                      type="text"
+                      autoComplete="username"
+                      value={formData.username}
+                      onChange={handleChange}
+                      className={`appearance-none relative block w-full px-3 py-3 border ${errors.username ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
+                      placeholder="Nom d'utilisateur unique"
+                  />
+                  {errors.username && (
+                      <p className="mt-1 text-sm text-red-600">{errors.username}</p>
+                  )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Généré automatiquement ou personnalisable (lettres, chiffres, tirets bas uniquement)
+                  </p>
+                </div>
+
+                {/* ✅ Rôle - Valeurs backend */}
                 <div>
                   <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
                     Rôle *
@@ -231,9 +302,9 @@ export default function Register() {
                       className={`appearance-none relative block w-full px-3 py-3 border ${errors.role ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
                   >
                     <option value="">Sélectionnez votre rôle</option>
-                    <option value="teacher">Enseignant</option>
-                    <option value="chef_departement">Chef de département</option>
-                    <option value="admin">Administrateur</option>
+                    <option value="ADMIN">Administrateur</option>
+                    <option value="TEACHER">Enseignant</option>
+                    <option value="CHEF_DEPARTMENT">Chef de département</option>
                   </select>
                   {errors.role && (
                       <p className="mt-1 text-sm text-red-600">{errors.role}</p>
@@ -280,44 +351,6 @@ export default function Register() {
                     Minimum 6 caractères avec au moins une majuscule, une minuscule et un chiffre
                   </p>
                 </div>
-
-                {/* Confirmation du mot de passe */}
-                <div>
-                  <label htmlFor="password_confirmation" className="block text-sm font-medium text-gray-700 mb-1">
-                    Confirmer le mot de passe *
-                  </label>
-                  <div className="relative">
-                    <input
-                        id="password_confirmation"
-                        name="password_confirmation"
-                        type={showPasswordConfirm ? "text" : "password"}
-                        autoComplete="new-password"
-                        value={formData.password_confirmation}
-                        onChange={handleChange}
-                        className={`appearance-none relative block w-full px-3 py-3 pr-10 border ${errors.password_confirmation ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26419] focus:border-[#F26419] focus:z-10 sm:text-sm transition-colors`}
-                        placeholder="Confirmez votre mot de passe"
-                    />
-                    <button
-                        type="button"
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                        onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                    >
-                      {showPasswordConfirm ? (
-                          <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/>
-                          </svg>
-                      ) : (
-                          <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                          </svg>
-                      )}
-                    </button>
-                  </div>
-                  {errors.password_confirmation && (
-                      <p className="mt-1 text-sm text-red-600">{errors.password_confirmation}</p>
-                  )}
-                </div>
               </div>
 
               {/* Conditions d'utilisation */}
@@ -334,8 +367,7 @@ export default function Register() {
                   <Link href="/terms" className="text-[#F26419] hover:text-[#E55A1A] underline">
                     conditions d&apos;utilisation
                   </Link>
-                  {' '}
-                  et la{' '}
+                  {' '}et la{' '}
                   <Link href="/privacy" className="text-[#F26419] hover:text-[#E55A1A] underline">
                     politique de confidentialité
                   </Link>
@@ -373,17 +405,6 @@ export default function Register() {
                 </p>
               </div>
             </form>
-
-            {/* Footer */}
-            <div className="mt-8 text-center">
-              <p className="text-xs text-gray-500">
-                © 2025 STUDAM - Système de gestion des présences
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                Développé par{' '}
-                Bioclass Innovators
-              </p>
-            </div>
           </div>
         </div>
       </div>

@@ -4,10 +4,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 
-export default function ModernHomePage() {
+export default function HomePage() {
   const [isVisible, setIsVisible] = useState(false);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     setIsVisible(true);
@@ -148,84 +147,8 @@ export default function ModernHomePage() {
 
   return (
       <div className="min-h-screen bg-white">
-        {/* Navigation moderne avec effet glassmorphism */}
-        <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md border-b border-gray-100 z-50 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center space-x-3">
-                <div className="h-10 w-10 bg-gradient-to-br from-[#F26419] to-[#FF7A47] rounded-xl flex items-center justify-center shadow-lg transform rotate-3 hover:rotate-0 transition-transform duration-300">
-                  <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.168 18.477 18.582 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                  </svg>
-                </div>
-                <span className="text-2xl font-bold bg-gradient-to-r from-[#1B396A] to-[#2A5490] bg-clip-text text-transparent">
-                STUDAM
-              </span>
-              </div>
-
-              <div className="hidden md:flex items-center space-x-8">
-                <Link href="#features" className="text-gray-700 hover:text-[#F26419] transition-colors font-medium relative group">
-                  Fonctionnalités
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#F26419] transition-all duration-300 group-hover:w-full"></span>
-                </Link>
-                <Link href="/about" className="text-gray-700 hover:text-[#F26419] transition-colors font-medium relative group">
-                  À propos
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#F26419] transition-all duration-300 group-hover:w-full"></span>
-                </Link>
-                <Link href="#testimonials" className="text-gray-700 hover:text-[#F26419] transition-colors font-medium relative group">
-                  Témoignages
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#F26419] transition-all duration-300 group-hover:w-full"></span>
-                </Link>
-                <Link href="/contact" className="text-gray-700 hover:text-[#F26419] transition-colors font-medium relative group">
-                  Contact
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#F26419] transition-all duration-300 group-hover:w-full"></span>
-                </Link>
-              </div>
-
-              <div className="flex items-center space-x-4">
-                <Link
-                    href="/auth/login"
-                    className="text-gray-700 hover:text-[#F26419] transition-colors font-medium"
-                >
-                  Connexion
-                </Link>
-                <Link
-                    href="/auth/register"
-                    className="bg-gradient-to-r from-[#F26419] to-[#FF7A47] text-white px-6 py-2.5 rounded-xl font-medium hover:from-[#E55A1A] hover:to-[#F26419] transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                >
-                  Inscription
-                </Link>
-              </div>
-
-              {/* Menu mobile */}
-              <div className="md:hidden">
-                <button
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className="text-gray-700 hover:text-[#F26419] transition-colors"
-                >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Menu mobile déroulant */}
-          {isMenuOpen && (
-              <div className="md:hidden bg-white border-t border-gray-100">
-                <div className="px-2 pt-2 pb-3 space-y-1">
-                  <Link href="#features" className="block px-3 py-2 text-gray-700 hover:text-[#F26419]">Fonctionnalités</Link>
-                  <Link href="/about" className="block px-3 py-2 text-gray-700 hover:text-[#F26419]">À propos</Link>
-                  <Link href="#testimonials" className="block px-3 py-2 text-gray-700 hover:text-[#F26419]">Témoignages</Link>
-                  <Link href="/contact" className="block px-3 py-2 text-gray-700 hover:text-[#F26419]">Contact</Link>
-                </div>
-              </div>
-          )}
-        </nav>
-
         {/* Hero Section avec animations et design moderne */}
-        <section className="pt-20 pb-16 bg-gradient-to-br from-gray-50 via-white to-blue-50 overflow-hidden">
+        <section className="pt-8 pb-16 bg-gradient-to-br from-gray-50 via-white to-blue-50 overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="lg:grid lg:grid-cols-12 lg:gap-8 items-center min-h-[80vh]">
               <div className={`lg:col-span-6 transform transition-all duration-1000 ${isVisible ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'}`}>
@@ -237,7 +160,7 @@ export default function ModernHomePage() {
                   </div>
 
                   <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
-                    <span className="block">L&apos; avenir de la</span>
+                    <span className="block">L&apos;avenir de la</span>
                     <span className="block bg-gradient-to-r from-[#F26419] to-[#FF7A47] bg-clip-text text-transparent">
                     gestion des présences
                   </span>
@@ -245,8 +168,8 @@ export default function ModernHomePage() {
                   </h1>
 
                   <p className="text-xl text-gray-600 max-w-3xl mb-8 leading-relaxed">
-                    STUDAM révolutionne la gestion des présences dans les établissements d&apos; enseignement avec
-                    l&apos; authentification biométrique, des tableaux de bord intelligents et des rapports automatisés.
+                    STUDAM révolutionne la gestion des présences dans les établissements d&apos;enseignement avec
+                    l&apos;authentification biométrique, des tableaux de bord intelligents et des rapports automatisés.
                   </p>
 
                   <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
@@ -402,7 +325,7 @@ export default function ModernHomePage() {
                 Une plateforme complète pour la gestion des présences
               </h3>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Découvrez toutes les fonctionnalités qui font de STUDAM la solution de référence pour les établissements d&apos; enseignement.
+                Découvrez toutes les fonctionnalités qui font de STUDAM la solution de référence pour les établissements d&apos;enseignement.
               </p>
             </div>
 
@@ -434,10 +357,10 @@ export default function ModernHomePage() {
               <div>
                 <h2 className="text-base text-[#F26419] font-semibold tracking-wide uppercase mb-4">À propos</h2>
                 <h3 className="text-4xl font-bold text-gray-900 mb-6">
-                  Une solution pensée pour l&apos; éducation moderne
+                  Une solution pensée pour l&apos;éducation moderne
                 </h3>
                 <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                  STUDAM transforme la gestion des présences dans les établissements d&apos; enseignement grâce à une technologie de pointe et une interface intuitive.
+                  STUDAM transforme la gestion des présences dans les établissements d&apos;enseignement grâce à une technologie de pointe et une interface intuitive.
                 </p>
 
                 <div className="space-y-6">
@@ -547,7 +470,7 @@ export default function ModernHomePage() {
                   </div>
 
                   <blockquote className="text-xl md:text-2xl text-gray-800 italic mb-8 leading-relaxed">
-                    {testimonials[currentTestimonial].content}
+                    &ldquo;{testimonials[currentTestimonial].content}&rdquo;
                   </blockquote>
 
                   <div className="flex items-center justify-center">
@@ -598,7 +521,7 @@ export default function ModernHomePage() {
                 Prêt à révolutionner la gestion des présences ?
               </h2>
               <p className="text-xl text-orange-100 mb-8 max-w-3xl mx-auto">
-                Rejoignez les milliers d&apos; établissements qui ont déjà adopté STUDAM pour simplifier leur quotidien.
+                Rejoignez les milliers d&apos;établissements qui ont déjà adopté STUDAM pour simplifier leur quotidien.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -612,7 +535,7 @@ export default function ModernHomePage() {
                     href="/contact"
                     className="border-2 border-white text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white hover:text-[#F26419] transition-all duration-200 transform hover:scale-105"
                 >
-                  Contacter l&apos; équipe
+                  Contacter l&apos;équipe
                 </Link>
               </div>
 

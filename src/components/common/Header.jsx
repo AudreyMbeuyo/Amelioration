@@ -56,28 +56,29 @@ export default function FixedHeader() {
               <div className="flex space-x-8">
                 {!isLoggedIn ? (
                     <>
-                      <a href="#about" className="text-gray-700 hover:text-[#F26419] px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                      {/* ✅ CORRECTION : Liens vers vraies pages au lieu d'ancres */}
+                      <Link href="/about" className="text-gray-700 hover:text-[#F26419] px-3 py-2 rounded-md text-sm font-medium transition-colors">
                         À propos
-                      </a>
-                      <a href="#features" className="text-gray-700 hover:text-[#F26419] px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                      </Link>
+                      <Link href="/features" className="text-gray-700 hover:text-[#F26419] px-3 py-2 rounded-md text-sm font-medium transition-colors">
                         Fonctionnalités
-                      </a>
-                      <a href="#contact" className="text-gray-700 hover:text-[#F26419] px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                      </Link>
+                      <Link href="/contact" className="text-gray-700 hover:text-[#F26419] px-3 py-2 rounded-md text-sm font-medium transition-colors">
                         Contact
-                      </a>
+                      </Link>
                     </>
                 ) : (
                     <>
                       <Link href="/dashboard" className="text-gray-700 hover:text-[#F26419] px-3 py-2 rounded-md text-sm font-medium transition-colors">
                         Tableau de bord
                       </Link>
-                      {/* CORRECTION CRITIQUE: /presence → /attendance */}
                       <Link href="/attendance" className="text-gray-700 hover:text-[#F26419] px-3 py-2 rounded-md text-sm font-medium transition-colors">
                         Présences
                       </Link>
                       <Link href="/timetable" className="text-gray-700 hover:text-[#F26419] px-3 py-2 rounded-md text-sm font-medium transition-colors">
                         Emploi du temps
                       </Link>
+
                       {/* Liens d'administration - Vérifier les rôles */}
                       {(user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'chef_departement') && (
                           <div className="relative group">
@@ -95,15 +96,14 @@ export default function FixedHeader() {
                                 <Link href="/admin/teachers" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#F26419]">
                                   Gestion des enseignants
                                 </Link>
-                                {/* Temporairement désactivé jusqu'à création */}
-                                <span className="block px-4 py-2 text-sm text-gray-400 cursor-not-allowed">
-                            Gestion des départements
-                            <span className="text-xs ml-1">(bientôt)</span>
-                          </span>
+                                <Link href="/admin/departments" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#F26419]">
+                                  Gestion des départements
+                                </Link>
                               </div>
                             </div>
                           </div>
                       )}
+
                       <Link href="/profile" className="text-gray-700 hover:text-[#F26419] px-3 py-2 rounded-md text-sm font-medium transition-colors">
                         Profil
                       </Link>
@@ -134,17 +134,16 @@ export default function FixedHeader() {
                         <div className="w-8 h-8 bg-gradient-to-br from-[#F26419] to-[#FF7A47] rounded-full flex items-center justify-center text-white text-sm font-medium">
                           {user?.nom ? user.nom.charAt(0).toUpperCase() : 'U'}
                         </div>
-                        <span className="hidden md:block text-sm font-medium">
-                      {user?.nom || 'Utilisateur'}
-                    </span>
+                        <span className="hidden md:block">{user?.nom || 'Utilisateur'}</span>
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
                         </svg>
                       </button>
+
                       <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                         <div className="py-1">
                           <Link href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#F26419]">
-                            Mon profil
+                            Mon Profil
                           </Link>
                           <Link href="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#F26419]">
                             Paramètres
@@ -163,11 +162,11 @@ export default function FixedHeader() {
               </div>
             </div>
 
-            {/* Bouton menu mobile */}
+            {/* Menu mobile toggle */}
             <div className="sm:hidden flex items-center">
               <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="text-gray-700 hover:text-[#F26419] focus:outline-none focus:text-[#F26419] transition-colors"
+                  className="text-gray-700 hover:text-[#F26419] transition-colors"
               >
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   {isMenuOpen ? (
@@ -186,27 +185,28 @@ export default function FixedHeader() {
           <div className="pt-2 pb-3 space-y-1">
             {!isLoggedIn ? (
                 <>
-                  <a
-                      href="#about"
+                  {/* ✅ CORRECTION : Liens vers vraies pages en mobile aussi */}
+                  <Link
+                      href="/about"
                       className="text-gray-700 hover:bg-gray-100 hover:text-[#F26419] block px-3 py-2 rounded-md text-base font-medium"
                       onClick={() => setIsMenuOpen(false)}
                   >
                     À propos
-                  </a>
-                  <a
-                      href="#features"
+                  </Link>
+                  <Link
+                      href="/features"
                       className="text-gray-700 hover:bg-gray-100 hover:text-[#F26419] block px-3 py-2 rounded-md text-base font-medium"
                       onClick={() => setIsMenuOpen(false)}
                   >
                     Fonctionnalités
-                  </a>
-                  <a
-                      href="#contact"
+                  </Link>
+                  <Link
+                      href="/contact"
                       className="text-gray-700 hover:bg-gray-100 hover:text-[#F26419] block px-3 py-2 rounded-md text-base font-medium"
                       onClick={() => setIsMenuOpen(false)}
                   >
                     Contact
-                  </a>
+                  </Link>
                 </>
             ) : (
                 <>
@@ -217,7 +217,6 @@ export default function FixedHeader() {
                   >
                     Tableau de bord
                   </Link>
-                  {/* CORRECTION CRITIQUE: /presence → /attendance */}
                   <Link
                       href="/attendance"
                       className="text-gray-700 hover:bg-gray-100 hover:text-[#F26419] block px-3 py-2 rounded-md text-base font-medium"
@@ -232,6 +231,7 @@ export default function FixedHeader() {
                   >
                     Emploi du temps
                   </Link>
+
                   {(user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'chef_departement') && (
                       <>
                         <Link
@@ -248,8 +248,16 @@ export default function FixedHeader() {
                         >
                           Gestion des enseignants
                         </Link>
+                        <Link
+                            href="/admin/departments"
+                            className="text-gray-700 hover:bg-gray-100 hover:text-[#F26419] block px-3 py-2 rounded-md text-base font-medium"
+                            onClick={() => setIsMenuOpen(false)}
+                        >
+                          Gestion des départements
+                        </Link>
                       </>
                   )}
+
                   <Link
                       href="/profile"
                       className="text-gray-700 hover:bg-gray-100 hover:text-[#F26419] block px-3 py-2 rounded-md text-base font-medium"

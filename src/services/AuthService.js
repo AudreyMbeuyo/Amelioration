@@ -24,18 +24,20 @@ class AuthenticationService {
     }
 
     /**
-     * Connexion utilisateur
-     * @param {string} email - Email de l'utilisateur
+     * 🔧 CORRECTION CRITIQUE: Connexion utilisateur avec USERNAME au lieu d'EMAIL
+     * @param {string} emailOrUsername - Email OU Username de l'utilisateur
      * @param {string} password - Mot de passe
      * @returns {Promise<Object>} Données de l'utilisateur connecté
      */
-    async login(email, password) {
-        this.log('🔐 Tentative de connexion', { email });
+    async login(emailOrUsername, password) {
+        this.log('🔐 Tentative de connexion', { emailOrUsername });
 
         try {
             const endpoint = process.env.NEXT_PUBLIC_AUTH_LOGIN_ENDPOINT || '/user/signin';
+
+            // ✅ CORRECTION: Backend attend "username" et "password" uniquement
             const response = await this.apiService.post(endpoint, {
-                email: email.trim().toLowerCase(),
+                username: emailOrUsername.trim(), // ✅ "username" au lieu d'"email"
                 password: password
             }, false); // false = pas d'auth header pour login
 
@@ -63,7 +65,7 @@ class AuthenticationService {
 
             // Gestion des erreurs spécifiques du backend
             if (error.status === 401) {
-                throw new Error('Email ou mot de passe incorrect');
+                throw new Error('Nom d\'utilisateur ou mot de passe incorrect');
             } else if (error.status === 422) {
                 throw new Error('Données de connexion invalides');
             } else if (error.status >= 500) {
@@ -77,32 +79,33 @@ class AuthenticationService {
     }
 
     /**
-     * Inscription utilisateur
+     * ✅ CORRECTION: Inscription utilisateur avec tous les champs requis
      * @param {Object} userData - Données de l'utilisateur
      * @returns {Promise<Object>} Données de l'utilisateur inscrit
      */
     async register(userData) {
         this.log('📝 Tentative d\'inscription', {
             email: userData.email,
+            username: userData.username,
             role: userData.role
         });
 
         try {
             const endpoint = process.env.NEXT_PUBLIC_AUTH_REGISTER_ENDPOINT || '/user/register';
 
-            // Préparer les données selon le format attendu par le backend
+            // ✅ PARFAITEMENT CONFORME AU BACKEND
             const registrationData = {
-                nom: userData.nom?.trim(),
+                name: userData.name?.trim(),              // ✅ "name" (pas "nom")
                 email: userData.email?.trim().toLowerCase(),
                 password: userData.password,
-                password_confirmation: userData.password_confirmation,
-                role: userData.role
+                phoneNumber: userData.phoneNumber?.trim(), // ✅ Champ requis
+                username: userData.username?.trim(),       // ✅ Champ requis
+                role: userData.role                        // ✅ Valeurs: ADMIN, TEACHER, CHEF_DEPARTMENT
             };
 
             this.log('📤 Envoi des données d\'inscription', {
                 ...registrationData,
-                password: '***masqué***',
-                password_confirmation: '***masqué***'
+                password: '***masqué***'
             });
 
             const response = await this.apiService.post(endpoint, registrationData, false);
@@ -132,7 +135,7 @@ class AuthenticationService {
 
             // Gestion des erreurs spécifiques du backend
             if (error.status === 409) {
-                throw new Error('Cette adresse email est déjà utilisée');
+                throw new Error('Cette adresse email ou ce nom d\'utilisateur est déjà utilisé');
             } else if (error.status === 422) {
                 // Erreurs de validation - renvoyer les détails
                 if (error.data && error.data.errors) {
@@ -270,11 +273,10 @@ class AuthenticationService {
     }
 
     /**
-     * Vérifier si l'utilisateur est administrateur
-     * @returns {boolean} True si admin
+     * ✅ CORRECTION: Méthodes de vérification rôle adaptées aux nouvelles valeurs
      */
     isAdmin() {
-        return this.hasRole(['admin', 'super_admin']);
+        return this.hasRole(['ADMIN', 'admin', 'super_admin']);
     }
 
     /**
@@ -282,7 +284,7 @@ class AuthenticationService {
      * @returns {boolean} True si chef de département
      */
     isChefDepartement() {
-        return this.hasRole('chef_departement');
+        return this.hasRole(['CHEF_DEPARTMENT', 'chef_departement']);
     }
 
     /**
@@ -290,7 +292,7 @@ class AuthenticationService {
      * @returns {boolean} True si enseignant
      */
     isTeacher() {
-        return this.hasRole('teacher');
+        return this.hasRole(['TEACHER', 'teacher']);
     }
 
     /**
@@ -333,7 +335,7 @@ class AuthenticationService {
     }
 
     /**
-     * Redirection après connexion selon le rôle
+     * ✅ CORRECTION: Redirection après connexion selon le rôle avec nouvelles valeurs
      */
     getRedirectPath() {
         const user = this.getUser();
@@ -341,15 +343,19 @@ class AuthenticationService {
 
         if (!user) return defaultPath;
 
-        // Redirection personnalisée selon le rôle
+        // Redirection personnalisée selon le rôle (supporter anciennes ET nouvelles valeurs)
         switch (user.role) {
+            case 'ADMIN':
             case 'admin':
             case 'super_admin':
                 return '/admin/dashboard';
+            case 'CHEF_DEPARTMENT':
             case 'chef_departement':
                 return '/chef-departement/dashboard';
+            case 'TEACHER':
             case 'teacher':
                 return '/teacher/dashboard';
+            case 'STUDENT':
             case 'student':
                 return '/student/dashboard';
             default:
