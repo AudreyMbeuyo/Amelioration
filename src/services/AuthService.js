@@ -1,242 +1,128 @@
+import ApiService from './ApiService';
+
 /**
  * Service d'authentification pour STUDAM
- * Gère la connexion, l'inscription et la session utilisateur
- * Conforme à l'architecture backend Laravel
+ * Gère la connexion, déconnexion, et vérification des permissions utilisateur
  */
-
-import { ApiService } from './ApiService';
-
 class AuthenticationService {
     constructor() {
         this.apiService = new ApiService();
-        this.tokenKey = process.env.NEXT_PUBLIC_TOKEN_KEY || 'authToken';
-        this.userKey = process.env.NEXT_PUBLIC_USER_KEY || 'user';
-        this.debugMode = process.env.NEXT_PUBLIC_DEBUG_API === 'true';
+        this.tokenKey = 'authToken';
+        this.userKey = 'user';
     }
 
     /**
-     * Log de débogage conditionnel
+     * Connexion utilisateur
+     * @param {string|Object} usernameOrCredentials - Username ou objet credentials
+     * @param {string} password - Mot de passe (optionnel si premier param est objet)
+     * @returns {Promise} Réponse de l'API
      */
-    log(message, data = null) {
-        if (this.debugMode && process.env.NEXT_PUBLIC_CONSOLE_LOGS === 'true') {
-            console.log(`[AuthService] ${message}`, data || '');
-        }
-    }
-
-    /**
-     * 🔧 CORRECTION CRITIQUE: Connexion utilisateur avec USERNAME au lieu d'EMAIL
-     * @param {string} emailOrUsername - Email OU Username de l'utilisateur
-     * @param {string} password - Mot de passe
-     * @returns {Promise<Object>} Données de l'utilisateur connecté
-     */
-    async login(emailOrUsername, password) {
-        this.log('🔐 Tentative de connexion', { emailOrUsername });
-
+    async login(usernameOrCredentials, password = null) {
         try {
-            const endpoint = process.env.NEXT_PUBLIC_AUTH_LOGIN_ENDPOINT || '/user/signin';
-
-            // ✅ CORRECTION: Backend attend "username" et "password" uniquement
-            const response = await this.apiService.post(endpoint, {
-                username: emailOrUsername.trim(), // ✅ "username" au lieu d'"email"
-                password: password
-            }, false); // false = pas d'auth header pour login
-
-            this.log('✅ Réponse de connexion reçue', {
-                hasToken: !!response.token,
-                hasUser: !!response.user,
-                userRole: response.user?.role
-            });
-
-            // Sauvegarder le token et les données utilisateur
-            if (response.token) {
-                this.storeAuthData(response.token, response.user);
-                this.log('💾 Données d\'authentification sauvegardées');
+            // Gestion flexible des paramètres pour compatibilité
+            let credentials;
+            if (typeof usernameOrCredentials === 'string') {
+                // Format: login(username, password)
+                credentials = {
+                    username: usernameOrCredentials,
+                    password: password
+                };
+            } else {
+                // Format: login({username, password}) ou login({email, password})
+                credentials = usernameOrCredentials;
             }
 
-            return {
-                success: true,
-                user: response.user,
-                token: response.token,
-                message: 'Connexion réussie'
-            };
+            console.log('🔐 [AUTH] Tentative de connexion pour:', credentials.username || credentials.email);
 
+            const response = await this.apiService.post('/user/signin', credentials);
+
+            if (response?.data && response.data.token) {
+                const { token, user } = response.data;
+
+                // Stocker les données d'authentification
+                this.storeAuthData(token, user);
+
+                console.log('✅ [AUTH] Connexion réussie pour:', user);
+                return { success: true, user, token };
+            } else {
+                console.warn('⚠️ [AUTH] Réponse de connexion invalide:', response);
+                return { success: false, message: 'Réponse de connexion invalide' };
+            }
         } catch (error) {
-            this.log('❌ Erreur de connexion', error);
-
-            // Gestion des erreurs spécifiques du backend
-            if (error.status === 401) {
-                throw new Error('Nom d\'utilisateur ou mot de passe incorrect');
-            } else if (error.status === 422) {
-                throw new Error('Données de connexion invalides');
-            } else if (error.status >= 500) {
-                throw new Error('Erreur serveur. Veuillez réessayer plus tard.');
-            } else if (error.status === 0) {
-                throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
-            }
-
-            throw new Error(error.message || 'Erreur lors de la connexion');
+            console.warn('⚠️ [AUTH] Erreur de connexion:', error);
+            return {
+                success: false,
+                message: error?.response?.data?.message || error?.message || 'Erreur de connexion'
+            };
         }
     }
 
     /**
-     * ✅ CORRECTION: Inscription utilisateur avec tous les champs requis
-     * @param {Object} userData - Données de l'utilisateur
-     * @returns {Promise<Object>} Données de l'utilisateur inscrit
+     * Inscription utilisateur
+     * @param {Object} userData - Données d'inscription
+     * @returns {Promise} Réponse de l'API
      */
     async register(userData) {
-        this.log('📝 Tentative d\'inscription', {
-            email: userData.email,
-            username: userData.username,
-            role: userData.role
-        });
-
         try {
-            const endpoint = process.env.NEXT_PUBLIC_AUTH_REGISTER_ENDPOINT || '/user/register';
+            console.log('📝 [AUTH] Tentative d\'inscription pour:', userData.email);
 
-            // ✅ PARFAITEMENT CONFORME AU BACKEND
-            const registrationData = {
-                name: userData.name?.trim(),              // ✅ "name" (pas "nom")
-                email: userData.email?.trim().toLowerCase(),
-                password: userData.password,
-                phoneNumber: userData.phoneNumber?.trim(), // ✅ Champ requis
-                username: userData.username?.trim(),       // ✅ Champ requis
-                role: userData.role                        // ✅ Valeurs: ADMIN, TEACHER, CHEF_DEPARTMENT
-            };
+            const response = await this.apiService.post('/user/register', userData);
 
-            this.log('📤 Envoi des données d\'inscription', {
-                ...registrationData,
-                password: '***masqué***'
-            });
+            if (response?.data) {
+                console.log('✅ [AUTH] Inscription réussie pour:', userData.email);
 
-            const response = await this.apiService.post(endpoint, registrationData, false);
-
-            this.log('✅ Réponse d\'inscription reçue', {
-                hasToken: !!response.token,
-                hasUser: !!response.user,
-                userRole: response.user?.role
-            });
-
-            // Sauvegarder le token et les données utilisateur si fournis
-            if (response.token) {
-                this.storeAuthData(response.token, response.user);
-                this.log('💾 Auto-connexion après inscription');
-            }
-
-            return {
-                success: true,
-                user: response.user,
-                token: response.token,
-                message: 'Inscription réussie',
-                autoLogin: !!response.token
-            };
-
-        } catch (error) {
-            this.log('❌ Erreur d\'inscription', error);
-
-            // Gestion des erreurs spécifiques du backend
-            if (error.status === 409) {
-                throw new Error('Cette adresse email ou ce nom d\'utilisateur est déjà utilisé');
-            } else if (error.status === 422) {
-                // Erreurs de validation - renvoyer les détails
-                if (error.data && error.data.errors) {
-                    const validationErrors = error.data.errors;
-                    const firstError = Object.values(validationErrors)[0];
-                    throw new Error(Array.isArray(firstError) ? firstError[0] : firstError);
+                // Optionnel: auto-connexion après inscription
+                if (response.data.token && response.data.user) {
+                    this.storeAuthData(response.data.token, response.data.user);
+                    return { success: true, user: response.data.user, autoLogin: true };
                 }
-                throw new Error('Données d\'inscription invalides');
-            } else if (error.status >= 500) {
-                throw new Error('Erreur serveur. Veuillez réessayer plus tard.');
-            } else if (error.status === 0) {
-                throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
-            }
 
-            throw new Error(error.message || 'Erreur lors de l\'inscription');
+                return { success: true, message: 'Inscription réussie' };
+            } else {
+                return { success: false, message: 'Erreur lors de l\'inscription' };
+            }
+        } catch (error) {
+            console.warn('⚠️ [AUTH] Erreur d\'inscription:', error);
+            return {
+                success: false,
+                message: error?.response?.data?.message || error?.message || 'Erreur lors de l\'inscription'
+            };
         }
     }
 
     /**
      * Déconnexion utilisateur
      */
-    async logout() {
-        this.log('🚪 Déconnexion en cours');
-
+    logout() {
         try {
-            // Tenter de notifier le serveur de la déconnexion
-            const endpoint = process.env.NEXT_PUBLIC_AUTH_LOGOUT_ENDPOINT || '/user/logout';
-            await this.apiService.post(endpoint, {}, true); // true = avec auth header
-        } catch (error) {
-            // La déconnexion côté serveur peut échouer, mais on continue la déconnexion locale
-            this.log('⚠️ Erreur lors de la déconnexion serveur (on continue)', error.message);
-        } finally {
-            // Toujours nettoyer les données locales
+            console.log('🚪 [AUTH] Déconnexion utilisateur');
             this.clearAuthData();
-            this.log('🧹 Données d\'authentification supprimées');
-        }
-    }
 
-    /**
-     * Récupérer le profil utilisateur
-     * @returns {Promise<Object>} Profil utilisateur mis à jour
-     */
-    async getProfile() {
-        this.log('👤 Récupération du profil utilisateur');
-
-        try {
-            const endpoint = process.env.NEXT_PUBLIC_AUTH_PROFILE_ENDPOINT || '/user/profile';
-            const response = await this.apiService.get(endpoint, true);
-
-            // Mettre à jour les données utilisateur locales
-            if (response.user) {
-                this.updateUserData(response.user);
-                this.log('🔄 Profil utilisateur mis à jour');
+            // Rediriger vers la page d'accueil
+            if (typeof window !== 'undefined') {
+                window.location.href = '/';
             }
-
-            return response.user;
         } catch (error) {
-            this.log('❌ Erreur lors de la récupération du profil', error);
-
-            if (error.status === 401) {
-                // Token invalide, déconnecter l'utilisateur
-                this.clearAuthData();
-                throw new Error('Session expirée. Veuillez vous reconnecter.');
-            }
-
-            throw new Error(error.message || 'Impossible de récupérer le profil');
+            console.error('❌ [AUTH] Erreur lors de la déconnexion:', error);
         }
     }
 
     /**
-     * Vérifier si l'utilisateur est authentifié
-     * @returns {boolean} État d'authentification
+     * Vérifier si l'utilisateur est connecté
+     * @returns {boolean} True si connecté
      */
     isAuthenticated() {
         if (typeof window === 'undefined') return false;
 
-        const token = this.getToken();
+        const token = localStorage.getItem(this.tokenKey);
         const user = this.getUser();
 
-        const isAuth = !!(token && user);
-        this.log('🔍 Vérification d\'authentification', {
-            hasToken: !!token,
-            hasUser: !!user,
-            isAuthenticated: isAuth
-        });
-
-        return isAuth;
-    }
-
-    /**
-     * Récupérer le token d'authentification
-     * @returns {string|null} Token d'authentification
-     */
-    getToken() {
-        if (typeof window === 'undefined') return null;
-        return localStorage.getItem(this.tokenKey);
+        return !!(token && user);
     }
 
     /**
      * Récupérer les données utilisateur
-     * @returns {Object|null} Données utilisateur
+     * @returns {Object|null} Données utilisateur ou null
      */
     getUser() {
         if (typeof window === 'undefined') return null;
@@ -245,18 +131,18 @@ class AuthenticationService {
             const userStr = localStorage.getItem(this.userKey);
             return userStr ? JSON.parse(userStr) : null;
         } catch (error) {
-            this.log('⚠️ Erreur lors de la lecture des données utilisateur', error);
+            console.error('❌ [AUTH] Erreur parsing user:', error);
             return null;
         }
     }
 
     /**
-     * Récupérer le rôle de l'utilisateur
-     * @returns {string|null} Rôle de l'utilisateur
+     * Récupérer le token d'authentification
+     * @returns {string|null} Token ou null
      */
-    getUserRole() {
-        const user = this.getUser();
-        return user?.role || null;
+    getToken() {
+        if (typeof window === 'undefined') return null;
+        return localStorage.getItem(this.tokenKey);
     }
 
     /**
@@ -265,18 +151,20 @@ class AuthenticationService {
      * @returns {boolean} True si l'utilisateur a le rôle
      */
     hasRole(roles) {
-        const userRole = this.getUserRole();
-        if (!userRole) return false;
+        const user = this.getUser();
+        if (!user || !user.role) return false;
 
-        const roleList = Array.isArray(roles) ? roles : [roles];
+        const userRole = user.role.toLowerCase();
+        const roleList = Array.isArray(roles) ? roles.map(r => r.toLowerCase()) : [roles.toLowerCase()];
         return roleList.includes(userRole);
     }
 
     /**
-     * ✅ CORRECTION: Méthodes de vérification rôle adaptées aux nouvelles valeurs
+     * Vérifier si l'utilisateur est admin
+     * @returns {boolean} True si admin
      */
     isAdmin() {
-        return this.hasRole(['ADMIN', 'admin', 'super_admin']);
+        return this.hasRole(['admin', 'super_admin']);
     }
 
     /**
@@ -284,7 +172,7 @@ class AuthenticationService {
      * @returns {boolean} True si chef de département
      */
     isChefDepartement() {
-        return this.hasRole(['CHEF_DEPARTMENT', 'chef_departement']);
+        return this.hasRole(['chef_department', 'chef_departement']);
     }
 
     /**
@@ -292,7 +180,15 @@ class AuthenticationService {
      * @returns {boolean} True si enseignant
      */
     isTeacher() {
-        return this.hasRole(['TEACHER', 'teacher']);
+        return this.hasRole(['teacher', 'enseignant']);
+    }
+
+    /**
+     * Vérifier si l'utilisateur est étudiant
+     * @returns {boolean} True si étudiant
+     */
+    isStudent() {
+        return this.hasRole(['student', 'etudiant']);
     }
 
     /**
@@ -335,32 +231,100 @@ class AuthenticationService {
     }
 
     /**
-     * ✅ CORRECTION: Redirection après connexion selon le rôle avec nouvelles valeurs
+     * ✅ CORRECTION: Redirection après connexion selon le rôle
+     * Évite l'erreur 404 en redirigeant vers des routes existantes
      */
     getRedirectPath() {
         const user = this.getUser();
-        const defaultPath = process.env.NEXT_PUBLIC_DEFAULT_REDIRECT_AFTER_LOGIN || '/dashboard';
 
-        if (!user) return defaultPath;
+        if (!user) return '/';
 
-        // Redirection personnalisée selon le rôle (supporter anciennes ET nouvelles valeurs)
-        switch (user.role) {
-            case 'ADMIN':
+        // ✅ Redirection selon le rôle avec vérification des routes existantes
+        switch (user.role?.toLowerCase()) {
             case 'admin':
             case 'super_admin':
+                // Vérifier si on a déjà les fichiers admin
                 return '/admin/dashboard';
-            case 'CHEF_DEPARTMENT':
+
             case 'chef_departement':
-                return '/chef-departement/dashboard';
-            case 'TEACHER':
+            case 'chef_department':
+                return '/chief/dashboard';
+
             case 'teacher':
+            case 'enseignant':
                 return '/teacher/dashboard';
-            case 'STUDENT':
+
             case 'student':
-                return '/students/dashboard';
+            case 'etudiant':
+                return '/student/dashboard';
+
             default:
-                return defaultPath;
+                console.warn('⚠️ [AUTH] Rôle non reconnu:', user.role);
+                return '/profile'; // Page de fallback sûre
         }
+    }
+
+    /**
+     * ✅ NOUVELLE: Fonction helper pour rediriger après connexion
+     */
+    redirectAfterLogin() {
+        if (typeof window !== 'undefined') {
+            const redirectPath = this.getRedirectPath();
+            console.log('🔄 [AUTH] Redirection vers:', redirectPath);
+            window.location.href = redirectPath;
+        }
+    }
+
+    /**
+     * ✅ NOUVELLE: Vérifier si l'utilisateur peut accéder à une route
+     */
+    canAccessRoute(route) {
+        const user = this.getUser();
+        if (!user) return false;
+
+        const role = user.role?.toLowerCase();
+
+        // Routes admin
+        if (route.startsWith('/admin')) {
+            return ['admin', 'super_admin'].includes(role);
+        }
+
+        // Routes chef de département
+        if (route.startsWith('/chief')) {
+            return ['chef_departement', 'chef_department', 'admin', 'super_admin'].includes(role);
+        }
+
+        // Routes enseignant
+        if (route.startsWith('/teacher')) {
+            return ['teacher', 'enseignant', 'admin', 'super_admin'].includes(role);
+        }
+
+        // Routes étudiant
+        if (route.startsWith('/student')) {
+            return ['student', 'etudiant'].includes(role);
+        }
+
+        // Routes générales (profil, etc.)
+        return true;
+    }
+
+    /**
+     * ✅ NOUVELLE: Middleware pour protéger les routes côté client
+     */
+    requireAuth(router, requiredRoute = null) {
+        if (typeof window === 'undefined') return false;
+
+        if (!this.isAuthenticated()) {
+            router.push('/auth/login');
+            return false;
+        }
+
+        if (requiredRoute && !this.canAccessRoute(requiredRoute)) {
+            router.push(this.getRedirectPath());
+            return false;
+        }
+
+        return true;
     }
 }
 

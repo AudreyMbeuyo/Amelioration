@@ -1,6 +1,6 @@
 /**
- * Middleware d'authentification pour STUDAM
- * Protège les routes qui nécessitent une authentification
+ * ✅ CORRECTION: Middleware d'authentification pour STUDAM
+ * Améliore la gestion des redirections et évite les erreurs 404
  */
 
 import { NextResponse } from 'next/server';
@@ -16,15 +16,16 @@ export function middleware(request) {
         '/auth/forgot-password',
         '/about',
         '/contact',
+        '/features',
         '/terms',
         '/privacy'
     ];
 
-    // Routes d'administration qui nécessitent des permissions spéciales
-    const adminRoutes = [
-        '/admin',
-        '/chef-departement'
-    ];
+    // ✅ CORRECTION: Routes d'administration avec hiérarchie
+    const adminRoutes = ['/admin'];
+    const chiefRoutes = ['/chief'];
+    const teacherRoutes = ['/teacher'];
+    const studentRoutes = ['/student'];
 
     // Vérifier si la route est publique
     const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
@@ -45,13 +46,23 @@ export function middleware(request) {
         return NextResponse.redirect(loginUrl);
     }
 
-    // Vérifier les permissions pour les routes d'administration
-    const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
+    // ✅ CORRECTION: Gestion spécifique du dashboard générique
+    if (pathname === '/dashboard') {
+        // Rediriger vers /dashboard qui gérera la redirection selon le rôle
+        return NextResponse.next();
+    }
 
-    if (isAdminRoute) {
-        // Ici, vous pourriez décoder le token pour vérifier le rôle
-        // Pour simplifier, on laisse passer (la vérification se fera côté composant)
-        // TODO: Ajouter la vérification du rôle si nécessaire
+    // ✅ AMÉLIORATION: Vérification des permissions par route
+    const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
+    const isChiefRoute = chiefRoutes.some(route => pathname.startsWith(route));
+    const isTeacherRoute = teacherRoutes.some(route => pathname.startsWith(route));
+    const isStudentRoute = studentRoutes.some(route => pathname.startsWith(route));
+
+    // ✅ TODO: Ici on pourrait décoder le token pour vérifier les rôles
+    // Pour l'instant, on laisse passer et la vérification se fait côté composant
+    if (isAdminRoute || isChiefRoute || isTeacherRoute || isStudentRoute) {
+        // La vérification des rôles se fera dans les composants
+        // TODO: Implémenter la vérification JWT si nécessaire
     }
 
     return NextResponse.next();
